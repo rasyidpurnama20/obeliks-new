@@ -31,7 +31,7 @@ Buka repo → **Settings** → **Environments** → **Production** → **Environ
 - `SUPABASE_URL`: Project URL dari Supabase.
 - `SUPABASE_SERVICE_ROLE_KEY`: service-role/secret key Supabase.
 
-Jangan membuat Environment bernama `SUPABASE_DB_URL`; nama tersebut harus menjadi **secret di dalam Environment `Production`**. Variable Vercel juga tidak otomatis tersedia di GitHub Actions. Jangan pernah menaruh service-role key di source code atau variable berawalan `NEXT_PUBLIC_`.
+Gunakan tombol **Add secret**, bukan **Add variable**. Jangan membuat Environment bernama `SUPABASE_DB_URL`; nama tersebut harus menjadi **secret di dalam Environment `Production`**. Variable Vercel juga tidak otomatis tersedia di GitHub Actions. Jangan pernah menaruh service-role key di source code atau variable berawalan `NEXT_PUBLIC_`.
 
 ## 4. Buat superadmin pertama
 

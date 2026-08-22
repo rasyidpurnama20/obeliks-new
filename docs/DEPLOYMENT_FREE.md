@@ -10,7 +10,7 @@ Panduan ini mengasumsikan pull request sudah digabung ke branch `main`.
 2. Simpan database password di password manager.
 3. Di Supabase klik **Connect → Session pooler → URI**, lalu salin connection string dan ganti `[YOUR-PASSWORD]` dengan database password. Password di URI harus di-percent-encode jika mengandung karakter khusus.
 4. Di GitHub buka repository **Settings → Environments → Production → Environment secrets**.
-5. Buat secret bernama `SUPABASE_DB_URL` di dalam Environment `Production`, lalu isi dengan URI lengkap tersebut. Jangan membuat Environment baru dengan nama `SUPABASE_DB_URL`.
+5. Klik **Add secret**, lalu buat secret bernama `SUPABASE_DB_URL` di dalam Environment `Production` dan isi dengan URI lengkap tersebut. Jangan memakai **Add variable** atau membuat Environment baru dengan nama `SUPABASE_DB_URL`.
 6. Setelah pull request yang mengubah `supabase/migrations` digabung ke `main`, workflow **Database migrations** otomatis melakukan dry-run, menerapkan migration yang belum pernah dijalankan, lalu menampilkan statusnya.
 7. Migration juga dapat dijalankan manual melalui **Actions → Database migrations → Run workflow**.
 8. Buka **Project Settings → API** dan catat:

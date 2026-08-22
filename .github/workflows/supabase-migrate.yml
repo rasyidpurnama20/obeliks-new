@@ -27,6 +27,7 @@ jobs:
     timeout-minutes: 10
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_DB_URL_VARIABLE_PRESENT: ${{ vars.SUPABASE_DB_URL != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,10 +37,10 @@ jobs:
         shell: bash
         run: |
           if [ -z "$SUPABASE_DB_URL" ]; then
-            if [ "${{ github.event_name }}" = "pull_request" ]; then
-              echo "::warning::SUPABASE_DB_URL is not configured in GitHub Environment Production; migration dry-run was skipped."
-              echo "configured=false" >> "$GITHUB_OUTPUT"
-              exit 0
+            if [ "$SUPABASE_DB_URL_VARIABLE_PRESENT" = "true" ]; then
+              echo "SUPABASE_DB_URL was found as an Environment variable, not a secret. Move it to Environment secrets."
+            else
+              echo "SUPABASE_DB_URL was not found in GitHub Environment Production secrets."
             fi
             echo "Add SUPABASE_DB_URL under GitHub Settings > Environments > Production > Environment secrets."
             exit 1
