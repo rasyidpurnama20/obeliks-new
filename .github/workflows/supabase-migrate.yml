@@ -31,24 +31,34 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check production database secret
+        id: database_secret
         shell: bash
         run: |
           if [ -z "$SUPABASE_DB_URL" ]; then
-            echo "SUPABASE_DB_URL is not configured in GitHub Actions secrets."
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "::warning::SUPABASE_DB_URL is not configured; migration dry-run was skipped."
+              echo "configured=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "SUPABASE_DB_URL is required before migrations can run on main."
             exit 1
           fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
 
       - name: Install Supabase CLI
+        if: steps.database_secret.outputs.configured == 'true'
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
       - name: Preview pending migrations
+        if: steps.database_secret.outputs.configured == 'true'
         run: supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
 
       - name: Apply pending migrations after merge
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: steps.database_secret.outputs.configured == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         run: supabase db push --db-url "$SUPABASE_DB_URL"
 
       - name: Show migration status
+        if: steps.database_secret.outputs.configured == 'true'
         run: supabase migration list --db-url "$SUPABASE_DB_URL"

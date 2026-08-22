@@ -1,12 +1,16 @@
 # Aktivasi login dan superadmin
 
-Ikuti urutan ini setelah pull request digabung ke `main`.
+## 0. Sebelum merge: wajib siapkan koneksi migration
+
+Pastikan secret GitHub `SUPABASE_DB_URL` sudah ada. Cara mengambil Session Pooler URI dan menyimpannya dijelaskan pada `docs/DEPLOYMENT_FREE.md` bagian 1. Tanpa secret ini, migration produksi setelah merge akan berhenti dengan aman.
+
+Setelah itu, gabungkan pull request ke `main` dan ikuti langkah berikut.
 
 ## 1. Tunggu migrasi Supabase
 
 1. Buka GitHub → **Actions** → **Database migrations**.
 2. Pastikan proses dari commit hasil merge berstatus hijau.
-3. Jika gagal karena secret belum ada, tambahkan `SUPABASE_DB_URL` sesuai `docs/DEPLOYMENT_FREE.md`, lalu jalankan ulang workflow.
+3. Jika gagal, buka log langkah yang merah; jangan jalankan bootstrap sebelum migration berhasil.
 
 ## 2. Atur Supabase Auth
 
