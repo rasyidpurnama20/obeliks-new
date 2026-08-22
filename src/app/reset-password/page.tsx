@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, hasSupabaseBrowserEnv } from "@/lib/supabase/client";
 
 function EyeIcon({ hidden }: { hidden: boolean }) {
   return hidden ? (
@@ -35,7 +35,9 @@ function getNewPasswordError(password: string) {
 export default function ResetPasswordPage() {
   const router = useRouter();
   const supabase = useMemo(
-    () => createClient({ detectSessionInUrl: false, isSingleton: false }),
+    () => hasSupabaseBrowserEnv()
+      ? createClient({ detectSessionInUrl: false, isSingleton: false })
+      : null,
     [],
   );
   const [password, setPassword] = useState("");
@@ -47,6 +49,11 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     async function initializeSession() {
+      if (!supabase) {
+        setMessage("Konfigurasi login belum tersedia pada deployment ini.");
+        return;
+      }
+
       const fragment = new URLSearchParams(window.location.hash.slice(1));
       const accessToken = fragment.get("access_token");
       const refreshToken = fragment.get("refresh_token");
@@ -78,6 +85,10 @@ export default function ResetPasswordPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!supabase) {
+      setMessage("Konfigurasi login belum tersedia pada deployment ini.");
+      return;
+    }
     const validationError = getNewPasswordError(password);
 
     if (validationError) {

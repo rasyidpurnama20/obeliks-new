@@ -2,7 +2,7 @@
 
 import { FormEvent, KeyboardEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, hasSupabaseBrowserEnv } from "@/lib/supabase/client";
 
 function EyeIcon({ hidden }: { hidden: boolean }) {
   return hidden ? (
@@ -38,7 +38,10 @@ function getPasswordError(value: string): string {
 
 export default function Home() {
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo(
+    () => hasSupabaseBrowserEnv() ? createClient() : null,
+    [],
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -65,6 +68,12 @@ export default function Home() {
     setNotice("");
 
     if (getEmailError(email) || getPasswordError(password)) return;
+
+    if (!supabase) {
+      setNotice("Konfigurasi login belum tersedia pada deployment ini.");
+      setNoticeType("error");
+      return;
+    }
 
     setIsLoading(true);
     setNoticeType("neutral");
@@ -111,6 +120,12 @@ export default function Home() {
     setNotice("");
 
     if (getEmailError(email)) return;
+
+    if (!supabase) {
+      setNotice("Konfigurasi login belum tersedia pada deployment ini.");
+      setNoticeType("error");
+      return;
+    }
 
     setIsLoading(true);
     await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
