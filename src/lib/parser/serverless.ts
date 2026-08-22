@@ -57,7 +57,7 @@ export async function parseServerlessDocument(filename: string, buffer: Buffer):
       }
 
       const result = await timeout(extractText(pdf, { mergePages: true }), timeoutMs);
-      const text = typeof result.text === "string" ? result.text : result.text.join("\n\n");
+      const text = result.text;
       return {
         text: text.trim(),
         format: "pdf",
@@ -67,7 +67,8 @@ export async function parseServerlessDocument(filename: string, buffer: Buffer):
           : [],
       };
     } finally {
-      await pdf.destroy();
+      const destroyablePdf = pdf as typeof pdf & { destroy?: () => void | Promise<void> };
+      await destroyablePdf.destroy?.();
     }
   }
 
