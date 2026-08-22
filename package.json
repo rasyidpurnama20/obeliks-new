@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:vercel": "next build",
+    "build:standalone": "NEXT_OUTPUT=standalone next build",
     "start": "next start",
     "typecheck": "tsc --noEmit"
   },
