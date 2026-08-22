@@ -21,10 +21,13 @@ jobs:
   bootstrap:
     name: Invite and grant superadmin
     runs-on: ubuntu-latest
+    environment: Production
     timeout-minutes: 10
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL_VARIABLE_PRESENT: ${{ vars.SUPABASE_URL != '' }}
+      SUPABASE_SERVICE_ROLE_VARIABLE_PRESENT: ${{ vars.SUPABASE_SERVICE_ROLE_KEY != '' }}
       SUPERADMIN_EMAIL: rasyid.purnama20@gmail.com
       SITE_URL: ${{ inputs.site_url }}
     steps:
@@ -41,7 +44,10 @@ jobs:
         shell: bash
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-            echo "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to GitHub Actions secrets."
+            if [ "$SUPABASE_URL_VARIABLE_PRESENT" = "true" ] || [ "$SUPABASE_SERVICE_ROLE_VARIABLE_PRESENT" = "true" ]; then
+              echo "A Supabase credential was found as an Environment variable. Move it to Environment secrets."
+            fi
+            echo "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY under GitHub Settings > Environments > Production > Environment secrets."
             exit 1
           fi
 

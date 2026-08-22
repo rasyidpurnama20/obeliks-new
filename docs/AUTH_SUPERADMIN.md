@@ -2,7 +2,7 @@
 
 ## 0. Sebelum merge: wajib siapkan koneksi migration
 
-Pastikan secret GitHub `SUPABASE_DB_URL` sudah ada. Cara mengambil Session Pooler URI dan menyimpannya dijelaskan pada `docs/DEPLOYMENT_FREE.md` bagian 1. Tanpa secret ini, migration produksi setelah merge akan berhenti dengan aman.
+Pastikan secret GitHub `SUPABASE_DB_URL` sudah ada di Environment `Production`. Cara mengambil Session Pooler URI dan menyimpannya dijelaskan pada `docs/DEPLOYMENT_FREE.md` bagian 1. Tanpa secret ini, migration produksi setelah merge akan berhenti dengan aman.
 
 Setelah itu, gabungkan pull request ke `main` dan ikuti langkah berikut.
 
@@ -25,12 +25,13 @@ Tidak perlu mengaktifkan pendaftaran publik. Akun pertama dibuat melalui undanga
 
 ## 3. Tambahkan secret GitHub
 
-Buka repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
+Buka repo → **Settings** → **Environments** → **Production** → **Environment secrets**:
 
+- `SUPABASE_DB_URL`: Session Pooler URI Supabase beserta password database.
 - `SUPABASE_URL`: Project URL dari Supabase.
 - `SUPABASE_SERVICE_ROLE_KEY`: service-role/secret key Supabase.
 
-Jangan pernah menaruh service-role key di source code atau variable berawalan `NEXT_PUBLIC_`.
+Gunakan tombol **Add secret**, bukan **Add variable**. Jangan membuat Environment bernama `SUPABASE_DB_URL`; nama tersebut harus menjadi **secret di dalam Environment `Production`**. Variable Vercel juga tidak otomatis tersedia di GitHub Actions. Jangan pernah menaruh service-role key di source code atau variable berawalan `NEXT_PUBLIC_`.
 
 ## 4. Buat superadmin pertama
 
