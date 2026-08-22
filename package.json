@@ -9,6 +9,7 @@
     "build:standalone": "NEXT_OUTPUT=standalone next build",
     "start": "next start",
     "test:bootstrap": "node --test tests/bootstrap-site-url.test.mjs",
+    "test:superadmin-password": "node --test tests/superadmin-password-policy.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
