@@ -4,6 +4,7 @@ services:
       context: ./services/parser
     environment:
       PARSER_MAX_FILE_MB: ${PARSER_MAX_FILE_MB:-25}
+      PARSER_SERVICE_TOKEN: ${PARSER_SERVICE_TOKEN:-}
     ports:
       - "8001:8001"
     restart: unless-stopped
@@ -11,4 +12,3 @@ services:
       resources:
         limits:
           memory: 4G
-

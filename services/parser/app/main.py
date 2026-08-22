@@ -6,9 +6,10 @@ import shutil
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Annotated
 
 from docling.document_converter import DocumentConverter
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import File, Header, HTTPException, UploadFile, FastAPI
 from pydantic import BaseModel
 
 
@@ -21,6 +22,12 @@ SUPPORTED_SUFFIXES = {
 MAX_FILE_BYTES = int(os.getenv("PARSER_MAX_FILE_MB", "25")) * 1024 * 1024
 
 app = FastAPI(title="OBELIKS Parser", version=APP_VERSION)
+
+
+def _require_service_token(authorization: Annotated[str | None, Header()] = None) -> None:
+    expected = os.getenv("PARSER_SERVICE_TOKEN")
+    if expected and authorization != f"Bearer {expected}":
+        raise HTTPException(status_code=401, detail="Invalid parser service token.")
 
 
 class ParsedDocument(BaseModel):
@@ -116,7 +123,11 @@ async def health() -> dict[str, str]:
 
 
 @app.post("/parse", response_model=ParseResponse)
-async def parse_document(file: UploadFile = File(...)) -> ParseResponse:
+async def parse_document(
+    file: UploadFile = File(...),
+    authorization: Annotated[str | None, Header()] = None,
+) -> ParseResponse:
+    _require_service_token(authorization)
     original_filename = Path(file.filename or "document").name
     suffix = Path(original_filename).suffix.lower()
     if suffix != ".zip" and suffix not in SUPPORTED_SUFFIXES:
@@ -142,4 +153,3 @@ async def parse_document(file: UploadFile = File(...)) -> ParseResponse:
         await file.close()
         if temporary_path:
             temporary_path.unlink(missing_ok=True)
-

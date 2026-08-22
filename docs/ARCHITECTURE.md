@@ -1,54 +1,56 @@
 # Arsitektur OBELIKS
 
-## Pilihan stack
+## Prinsip utama
 
-| Lapisan | Pilihan | Alasan |
+1. **Gratis untuk mulai:** hanya GitHub, Vercel Hobby, dan Supabase Free yang wajib.
+2. **AI tidak menjadi single point of failure:** rules engine tetap menghasilkan caution tanpa API key.
+3. **Upload tidak melewati Vercel:** browser mengunggah langsung ke private Supabase Storage.
+4. **Tidak terkunci Vercel:** aplikasi memakai runtime Node.js standar dan memiliki standalone Docker image.
+5. **Tidak terkunci Supabase Cloud:** skema adalah PostgreSQL dan Supabase dapat dipindah ke Docker self-hosted.
+
+## Stack per fase
+
+| Lapisan | Fase gratis | Fase server sendiri |
 |---|---|---|
-| Web dan API | Next.js 16 App Router, React 19, TypeScript | Satu codebase, rendering cepat, Route Handlers, mudah di-deploy |
-| UI | CSS tokens dahulu; Tailwind/shadcn dapat ditambah saat komponen dimigrasikan | Menjaga scaffold ringan dan tidak mengunci desain prototipe |
-| Data | Supabase PostgreSQL | Relasional untuk CPL–CPMK sekaligus fleksibel melalui JSONB |
-| Keamanan | Supabase Auth + PostgreSQL RLS | Hak akses melekat pada data, bukan hanya middleware web |
-| File | Supabase Storage bucket privat | File sumber tidak masuk database atau Git |
-| Vektor | pgvector di PostgreSQL | Pencarian semantik tanpa vector database terpisah |
-| Parser | FastAPI + Docling | Parsing berat dipisah dari request web dan dapat autoscale |
-| AI | OpenAI Responses API + Structured Outputs/Zod | Hasil mengikuti schema yang sama dengan TypeScript |
-| Job state | `document_jobs` + Realtime | UI dapat menampilkan queued → parsing → extracting → review |
+| Web/API | Next.js di Vercel | Container Next.js yang sama |
+| Database/Auth/Storage | Supabase Cloud Free | Self-hosted Supabase Docker |
+| Parser cepat | Mammoth + unpdf di Vercel Node runtime | Tetap tersedia sebagai fallback |
+| Parser kompleks | Belum dijalankan | FastAPI + Docling container |
+| Validasi | Rules engine deterministik | Rules engine yang sama |
+| AI | Opsional, usage-based | OpenAI atau provider/local model melalui adapter |
 
 ## Alur dokumen
 
-1. Browser mengunggah DOCX/PDF/ZIP ke bucket privat `rps-source`.
-2. API membuat `document_jobs` dengan idempotency key/checksum.
-3. Worker parser mengambil file dan menghasilkan representasi Markdown serta metadata struktur.
-4. AI hanya menerima teks terpilih, bukan file mentah, lalu mengembalikan Structured Output.
-5. Hasil disimpan pada `rps_documents.structured_data`; sumber mentah tetap di `raw_extraction` untuk audit.
-6. Field dengan confidence rendah atau isu aturan OBE masuk `validation_summary` dan diperiksa manusia.
+1. API `/api/uploads/sign` mengautentikasi pengguna, membuat baris `rps_documents`, dan menghasilkan signed upload URL.
+2. Browser mengunggah file langsung ke bucket privat `rps-source`.
+3. API `/api/documents/parse` mengambil file dari Storage dan menjalankan parser ringan.
+4. PDF scan, ZIP, format lama, atau file di atas batas ringan menghasilkan respons `enhanced_parser_required`.
+5. Jika `PARSER_SERVICE_URL` tersedia, endpoint yang sama otomatis mengalihkan file tersebut ke Docling.
+6. Rules engine menyimpan coverage dan caution pada `validation_summary`.
+7. Jika AI diaktifkan, pengguna dapat meminta Structured Extraction; hasil tetap harus direview manusia.
 
-## Prinsip performa dan biaya
+## Batas free tier yang sengaja diterapkan
 
-- Parse satu kali, simpan hasilnya, dan gunakan checksum untuk deduplikasi.
-- Jangan mengirim gambar/file penuh ke model jika Docling sudah menghasilkan teks yang cukup.
-- Mulai evaluasi akurasi dengan model terkuat; gunakan `gpt-5.6-terra` sebagai default operasional setelah lolos dataset evaluasi.
-- Batasi output AI dengan schema dan simpan versi prompt/model untuk reproducibility.
-- Gunakan index B-tree untuk relasi/status, GIN untuk JSONB, dan HNSW hanya untuk chunk yang benar-benar dicari semantik.
-- Jalankan parser sebagai worker terpisah agar autoscaling web tidak membawa beban ML/OCR.
+- Maksimum default parser ringan: 10 MB, 80 halaman, 45 detik proses parser.
+- Upload memakai Supabase signed URL untuk menghindari body limit Vercel.
+- AI default `disabled`; tidak ada pemanggilan berbayar tanpa konfigurasi eksplisit.
+- Teks hasil parser disimpan sekali dalam JSONB dan digunakan ulang.
+- OCR, gambar berat, dan ZIP tidak dipaksakan pada Vercel Function.
 
-## Tahap pengembangan
+## Portabilitas
 
-### Tahap 1 — fondasi
+- `next.config.ts` menghasilkan standalone server.
+- `Dockerfile` menjalankan hasil build tanpa Vercel runtime khusus.
+- Seluruh perubahan database tersimpan sebagai migration SQL.
+- Enhanced parser memiliki HTTP contract tetap dan token service-to-service.
+- Endpoint Storage/Auth hanya menggunakan Supabase SDK yang juga kompatibel dengan self-hosted Supabase.
+- `PARSER_SERVICE_URL`, model AI, bucket, dan batas parser seluruhnya dikendalikan environment variables.
 
-- Auth organisasi, course, dokumen, job, upload privat.
-- Parser DOCX/PDF/ZIP.
-- Structured extraction dan halaman review.
+## Urutan pengembangan berikutnya
 
-### Tahap 2 — OBE engine
-
-- CPL, CPMK, Sub-CPMK dan matriks keterkaitan.
-- Rules engine deterministik untuk bobot, total jam, dan kelengkapan.
-- AI hanya untuk interpretasi, rekomendasi, dan field ambigu.
-
-### Tahap 3 — skala
-
-- Queue terkelola/polling worker dengan `FOR UPDATE SKIP LOCKED`.
-- Observability, eval dataset, prompt versioning, caching, dan rate limit.
-- RAG terhadap kebijakan kampus/SN-Dikti dengan RLS-aware pgvector.
+1. Integrasikan halaman login Supabase ke prototipe.
+2. Buat UI upload yang memanggil signed URL lalu `uploadToSignedUrl`.
+3. Buat halaman review hasil rules-only.
+4. Tambahkan structured AI sebagai tombol opsional, bukan proses otomatis.
+5. Setelah server tersedia, aktifkan Docling dan OCR tanpa mengubah alur pengguna.
 
