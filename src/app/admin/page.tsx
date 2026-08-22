@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { signOut } from "./actions";
+import { DashboardApp } from "./dashboard-app";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Dashboard — OBELIKS APPS",
+  description: "MVP dashboard integrasi RPS berbasis peran.",
+};
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -9,7 +16,7 @@ export default async function AdminPage() {
   if (!user) redirect("/");
 
   const [{ data: profile }, { data: platformRole }] = await Promise.all([
-    supabase.from("profiles").select("status").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("display_name,status").eq("id", user.id).maybeSingle(),
     supabase.from("platform_roles").select("role").eq("user_id", user.id).maybeSingle(),
   ]);
 
@@ -18,18 +25,10 @@ export default async function AdminPage() {
   }
 
   return (
-    <main className="admin-page">
-      <section className="admin-shell">
-        <div>
-          <p className="admin-eyebrow">OBELIKS APPS</p>
-          <h1>Superadmin aktif</h1>
-          <p>{user.email}</p>
-        </div>
-        <p className="admin-note">Ruang superadmin siap dirancang pada tahap UI berikutnya.</p>
-        <form action={signOut}>
-          <button className="secondary-button" type="submit">Keluar</button>
-        </form>
-      </section>
-    </main>
+    <DashboardApp
+      displayName={profile.display_name}
+      email={user.email ?? "superadmin@obeliks.app"}
+      signOutAction={signOut}
+    />
   );
 }
