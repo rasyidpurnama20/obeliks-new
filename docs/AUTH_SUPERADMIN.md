@@ -36,7 +36,7 @@ Jangan pernah menaruh service-role key di source code atau variable berawalan `N
 
 1. Buka GitHub → **Actions** → **Bootstrap superadmin**.
 2. Klik **Run workflow** pada branch `main`.
-3. Isi email Anda dan URL production Vercel.
+3. Email superadmin sudah dikunci ke `rasyid.purnama20@gmail.com`; isi URL production Vercel.
 4. Jalankan, lalu tunggu status hijau.
 5. Buka email undangan, buat kata sandi, lalu login.
 
