@@ -137,7 +137,10 @@ export default function Home() {
   }
 
   return (
-    <main className="login-page">
+    <main className="login-page login-page-with-background">
+      <div className="login-background login-background-one" aria-hidden="true" />
+      <div className="login-background login-background-two" aria-hidden="true" />
+
       <section className="login-card" aria-labelledby="login-title">
         <h1 id="login-title">OBELIKS APPS</h1>
 
