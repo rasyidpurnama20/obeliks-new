@@ -2,7 +2,7 @@
 
 Panduan ini mengasumsikan pull request sudah digabung ke branch `main`.
 
-> Status saat ini: fondasi deployment, endpoint, database, dan parser sudah tersedia. Halaman login, upload, serta review masih menjadi milestone UI berikutnya; jadi deployment awal menampilkan prototipe dan health check terlebih dahulu.
+> Status saat ini: fondasi deployment, login Supabase, endpoint, database, dan parser sudah tersedia. Aktivasi superadmin mengikuti `docs/AUTH_SUPERADMIN.md`; UI upload dan review tetap menjadi milestone berikutnya.
 
 ## 1. Aktifkan migration otomatis Supabase
 

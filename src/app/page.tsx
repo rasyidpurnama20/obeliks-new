@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useState } from "react";
+import { FormEvent, KeyboardEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient, hasSupabaseBrowserEnv } from "@/lib/supabase/client";
 
 function EyeIcon({ hidden }: { hidden: boolean }) {
   return hidden ? (
@@ -35,6 +37,11 @@ function getPasswordError(value: string): string {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const supabase = useMemo(
+    () => hasSupabaseBrowserEnv() ? createClient() : null,
+    [],
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -42,25 +49,91 @@ export default function Home() {
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
   const [notice, setNotice] = useState("");
+  const [noticeType, setNoticeType] = useState<"neutral" | "error" | "success">("neutral");
+  const [isLoading, setIsLoading] = useState(false);
 
   const emailError = emailTouched ? getEmailError(email) : "";
   const passwordError = passwordTouched ? getPasswordError(password) : "";
   const message = emailError || passwordError || (capsLock ? "Caps Lock sedang aktif." : notice);
-  const messageType = emailError || passwordError ? "error" : capsLock ? "warning" : "neutral";
+  const messageType = emailError || passwordError ? "error" : capsLock ? "warning" : noticeType;
 
   function handleCapsLock(event: KeyboardEvent<HTMLInputElement>) {
     setCapsLock(event.getModifierState("CapsLock"));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setEmailTouched(true);
     setPasswordTouched(true);
     setNotice("");
 
-    if (!getEmailError(email) && !getPasswordError(password)) {
-      setNotice("Autentikasi akan diaktifkan pada tahap fitur berikutnya.");
+    if (getEmailError(email) || getPasswordError(password)) return;
+
+    if (!supabase) {
+      setNotice("Konfigurasi login belum tersedia pada deployment ini.");
+      setNoticeType("error");
+      return;
     }
+
+    setIsLoading(true);
+    setNoticeType("neutral");
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    if (signInError) {
+      setNotice("Email atau kata sandi tidak valid.");
+      setNoticeType("error");
+      setIsLoading(false);
+      return;
+    }
+
+    const [{ data: profile }, { data: platformRole }] = await Promise.all([
+      supabase.from("profiles").select("status").maybeSingle(),
+      supabase.from("platform_roles").select("role").maybeSingle(),
+    ]);
+
+    if (profile?.status !== "active") {
+      await supabase.auth.signOut();
+      setNotice("Akun tidak aktif. Hubungi administrator.");
+      setNoticeType("error");
+      setIsLoading(false);
+      return;
+    }
+
+    if (platformRole?.role === "superadmin") {
+      router.replace("/admin");
+      router.refresh();
+      return;
+    }
+
+    await supabase.auth.signOut();
+    setNotice("Akun belum memiliki akses aplikasi.");
+    setNoticeType("error");
+    setIsLoading(false);
+  }
+
+  async function handleForgotPassword() {
+    setEmailTouched(true);
+    setNotice("");
+
+    if (getEmailError(email)) return;
+
+    if (!supabase) {
+      setNotice("Konfigurasi login belum tersedia pada deployment ini.");
+      setNoticeType("error");
+      return;
+    }
+
+    setIsLoading(true);
+    await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+    });
+    setNotice("Jika email terdaftar, tautan pemulihan sudah dikirim.");
+    setNoticeType("success");
+    setIsLoading(false);
   }
 
   return (
@@ -83,9 +156,11 @@ export default function Home() {
               aria-invalid={Boolean(emailError)}
               aria-describedby="login-message"
               onBlur={() => setEmailTouched(true)}
+              disabled={isLoading}
               onChange={(event) => {
                 setEmail(event.target.value);
                 setNotice("");
+                setNoticeType("neutral");
               }}
             />
           </div>
@@ -104,9 +179,11 @@ export default function Home() {
                 aria-invalid={Boolean(passwordError)}
                 aria-describedby="login-message"
                 onBlur={() => setPasswordTouched(true)}
+                disabled={isLoading}
                 onChange={(event) => {
                   setPassword(event.target.value);
                   setNotice("");
+                  setNoticeType("neutral");
                 }}
                 onKeyDown={handleCapsLock}
                 onKeyUp={handleCapsLock}
@@ -114,6 +191,7 @@ export default function Home() {
               <button
                 className="password-toggle"
                 type="button"
+                disabled={isLoading}
                 aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
                 aria-pressed={showPassword}
                 onClick={() => setShowPassword((visible) => !visible)}
@@ -123,7 +201,7 @@ export default function Home() {
             </div>
           </div>
 
-          <button className="forgot-password" type="button" onClick={() => setNotice("Pemulihan kata sandi akan diaktifkan pada tahap fitur berikutnya.")}>
+          <button className="forgot-password" type="button" disabled={isLoading} onClick={handleForgotPassword}>
             Lupa kata sandi?
           </button>
 
@@ -131,7 +209,9 @@ export default function Home() {
             {message}
           </p>
 
-          <button className="submit-button" type="submit">Masuk</button>
+          <button className="submit-button" type="submit" disabled={isLoading}>
+            {isLoading ? "Memeriksa..." : "Masuk"}
+          </button>
         </form>
       </section>
     </main>
