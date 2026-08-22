@@ -17,6 +17,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test:bootstrap
+      - run: npm run test:superadmin-password
       - name: Simulate Vercel adapter build
         run: NEXT_ADAPTER_PATH="$GITHUB_WORKSPACE/tests/fixtures/next-adapter-stub.cjs" npm run build:vercel
 

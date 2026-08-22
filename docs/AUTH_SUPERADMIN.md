@@ -43,6 +43,16 @@ Gunakan tombol **Add secret**, bukan **Add variable**. Jangan membuat Environmen
 
 Jika email tersebut sudah ada, workflow hanya memberi role superadmin. Gunakan **Lupa kata sandi** pada halaman login bila diperlukan.
 
+### Jika email terkena rate limit
+
+1. Buka GitHub → **Settings** → **Environments** → **Production** → **Environment secrets**.
+2. Tambahkan secret satu kali bernama `SUPERADMIN_INITIAL_PASSWORD` dengan kata sandi awal yang dipilih.
+3. Buka **Actions** → **Set superadmin password** → **Run workflow** pada branch `main`.
+4. Setelah hijau, segera hapus secret `SUPERADMIN_INITIAL_PASSWORD` dari Environment `Production`.
+5. Login dengan email superadmin dan kata sandi tersebut, lalu ganti dengan kata sandi unik setelah akses pemulihan email normal kembali.
+
+Workflow ini melewati pengiriman email, mengonfirmasi akun, mengaktifkan profil, dan memastikan role `superadmin`. Nilai kata sandi tidak boleh ditulis di source code, workflow input, log, variable, atau dokumentasi.
+
 ## 5. Atur Vercel Production
 
 Buka Vercel → project OBELIKS → **Settings** → **Environment Variables**. Isi untuk **Production**:
