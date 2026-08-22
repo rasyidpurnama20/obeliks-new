@@ -13,9 +13,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+          cache: npm
+      - run: npm ci
       - run: npm run typecheck
-      - run: npm run build
+      - name: Simulate Vercel adapter build
+        run: NEXT_ADAPTER_PATH="$GITHUB_WORKSPACE/tests/fixtures/next-adapter-stub.cjs" npm run build:vercel
+
+  standalone:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:standalone
+      - name: Verify standalone server artifact
+        run: test -f .next/standalone/server.js
 
   parser-syntax:
     runs-on: ubuntu-latest
