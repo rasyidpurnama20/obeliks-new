@@ -4,19 +4,23 @@ Panduan ini mengasumsikan pull request sudah digabung ke branch `main`.
 
 > Status saat ini: fondasi deployment, endpoint, database, dan parser sudah tersedia. Halaman login, upload, serta review masih menjadi milestone UI berikutnya; jadi deployment awal menampilkan prototipe dan health check terlebih dahulu.
 
-## 1. Setelah login Supabase
+## 1. Aktifkan migration otomatis Supabase
 
 1. Klik **New project** dan pilih region terdekat dengan pengguna utama; untuk Indonesia biasanya Singapore adalah pilihan praktis.
 2. Simpan database password di password manager.
-3. Buka **SQL Editor** dan jalankan migration berikut secara berurutan:
-   - `supabase/migrations/0001_core.sql`
-   - `supabase/migrations/0002_storage.sql`
-4. Buka **Project Settings → API** dan catat:
+3. Di Supabase klik **Connect → Session pooler → URI**, lalu salin connection string dan ganti `[YOUR-PASSWORD]` dengan database password. Password di URI harus di-percent-encode jika mengandung karakter khusus.
+4. Di GitHub buka repository **Settings → Secrets and variables → Actions → New repository secret**.
+5. Buat secret bernama `SUPABASE_DB_URL` dan isi dengan URI lengkap tersebut.
+6. Setelah pull request yang mengubah `supabase/migrations` digabung ke `main`, workflow **Database migrations** otomatis melakukan dry-run, menerapkan migration yang belum pernah dijalankan, lalu menampilkan statusnya.
+7. Migration juga dapat dijalankan manual melalui **Actions → Database migrations → Run workflow**.
+8. Buka **Project Settings → API** dan catat:
    - Project URL
    - anon/public key
    - service_role key
-5. Jangan menaruh `service_role` key pada variabel yang diawali `NEXT_PUBLIC_`.
-6. Di **Authentication → Providers**, aktifkan Email terlebih dahulu. OAuth dapat ditambahkan setelah domain produksi tersedia.
+9. Jangan menaruh `service_role` key pada variabel yang diawali `NEXT_PUBLIC_`.
+10. Di **Authentication → Providers**, aktifkan Email terlebih dahulu. OAuth dapat ditambahkan setelah domain produksi tersedia.
+
+Migration awal dibuat idempotent sehingga aman jika sebelumnya pernah dijalankan melalui SQL Editor. Setelah otomatisasi aktif, semua perubahan database baru harus dibuat sebagai file migration bertimestamp dan digabung melalui pull request; jangan mengubah schema produksi langsung dari SQL Editor.
 
 ## 2. Setelah login Vercel
 

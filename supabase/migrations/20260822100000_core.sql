@@ -1,7 +1,7 @@
 create extension if not exists pgcrypto;
 create extension if not exists vector;
 
-create table public.organizations (
+create table if not exists public.organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text not null unique,
@@ -9,7 +9,7 @@ create table public.organizations (
   created_at timestamptz not null default now()
 );
 
-create table public.organization_members (
+create table if not exists public.organization_members (
   organization_id uuid not null references public.organizations(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   role text not null check (role in ('owner', 'admin', 'reviewer', 'lecturer')),
@@ -17,7 +17,7 @@ create table public.organization_members (
   primary key (organization_id, user_id)
 );
 
-create table public.courses (
+create table if not exists public.courses (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
   code text not null,
@@ -30,7 +30,7 @@ create table public.courses (
   unique (organization_id, code)
 );
 
-create table public.rps_documents (
+create table if not exists public.rps_documents (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
   course_id uuid references public.courses(id) on delete set null,
@@ -50,7 +50,7 @@ create table public.rps_documents (
   unique (organization_id, source_checksum)
 );
 
-create table public.document_jobs (
+create table if not exists public.document_jobs (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
   document_id uuid not null references public.rps_documents(id) on delete cascade,
@@ -68,7 +68,7 @@ create table public.document_jobs (
   updated_at timestamptz not null default now()
 );
 
-create table public.document_chunks (
+create table if not exists public.document_chunks (
   id bigint generated always as identity primary key,
   organization_id uuid not null references public.organizations(id) on delete cascade,
   document_id uuid not null references public.rps_documents(id) on delete cascade,
@@ -80,13 +80,13 @@ create table public.document_chunks (
   unique (document_id, ordinal)
 );
 
-create index courses_organization_idx on public.courses (organization_id);
-create index rps_documents_course_idx on public.rps_documents (course_id, updated_at desc);
-create index rps_documents_status_idx on public.rps_documents (organization_id, status, updated_at desc);
-create index rps_documents_structured_gin on public.rps_documents using gin (structured_data jsonb_path_ops);
-create index document_jobs_queue_idx on public.document_jobs (status, created_at) where status in ('queued', 'parsing', 'extracting');
-create index document_chunks_document_idx on public.document_chunks (document_id, ordinal);
-create index document_chunks_embedding_hnsw on public.document_chunks using hnsw (embedding vector_cosine_ops) where embedding is not null;
+create index if not exists courses_organization_idx on public.courses (organization_id);
+create index if not exists rps_documents_course_idx on public.rps_documents (course_id, updated_at desc);
+create index if not exists rps_documents_status_idx on public.rps_documents (organization_id, status, updated_at desc);
+create index if not exists rps_documents_structured_gin on public.rps_documents using gin (structured_data jsonb_path_ops);
+create index if not exists document_jobs_queue_idx on public.document_jobs (status, created_at) where status in ('queued', 'parsing', 'extracting');
+create index if not exists document_chunks_document_idx on public.document_chunks (document_id, ordinal);
+create index if not exists document_chunks_embedding_hnsw on public.document_chunks using hnsw (embedding vector_cosine_ops) where embedding is not null;
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -98,10 +98,13 @@ begin
 end;
 $$;
 
+drop trigger if exists courses_set_updated_at on public.courses;
 create trigger courses_set_updated_at before update on public.courses
 for each row execute function public.set_updated_at();
+drop trigger if exists rps_documents_set_updated_at on public.rps_documents;
 create trigger rps_documents_set_updated_at before update on public.rps_documents
 for each row execute function public.set_updated_at();
+drop trigger if exists document_jobs_set_updated_at on public.document_jobs;
 create trigger document_jobs_set_updated_at before update on public.document_jobs
 for each row execute function public.set_updated_at();
 
@@ -125,23 +128,29 @@ alter table public.rps_documents enable row level security;
 alter table public.document_jobs enable row level security;
 alter table public.document_chunks enable row level security;
 
+drop policy if exists organizations_member_select on public.organizations;
 create policy organizations_member_select on public.organizations
 for select using (public.is_org_member(id));
 
+drop policy if exists organization_members_member_select on public.organization_members;
 create policy organization_members_member_select on public.organization_members
 for select using (public.is_org_member(organization_id));
 
+drop policy if exists courses_member_all on public.courses;
 create policy courses_member_all on public.courses
 for all using (public.is_org_member(organization_id))
 with check (public.is_org_member(organization_id));
 
+drop policy if exists rps_documents_member_all on public.rps_documents;
 create policy rps_documents_member_all on public.rps_documents
 for all using (public.is_org_member(organization_id))
 with check (public.is_org_member(organization_id));
 
+drop policy if exists document_jobs_member_select on public.document_jobs;
 create policy document_jobs_member_select on public.document_jobs
 for select using (public.is_org_member(organization_id));
 
+drop policy if exists document_chunks_member_select on public.document_chunks;
 create policy document_chunks_member_select on public.document_chunks
 for select using (public.is_org_member(organization_id));
 
