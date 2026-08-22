@@ -1,33 +1,139 @@
-const stack = [
-  ["Next.js + TypeScript", "Web dan API cepat dalam satu codebase dengan kontrak data yang ketat."],
-  ["Supabase PostgreSQL", "Auth, Storage, Realtime, JSONB, RLS, dan pgvector dalam satu platform."],
-  ["FastAPI + Docling", "Parser PDF, DOCX, Office, gambar, dan ZIP berjalan terpisah dari web."],
-  ["Structured AI", "Responses API menghasilkan data RPS tervalidasi dan siap masuk database."],
-];
+"use client";
+
+import { FormEvent, KeyboardEvent, useState } from "react";
+
+function EyeIcon({ hidden }: { hidden: boolean }) {
+  return hidden ? (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m3 3 18 18" />
+      <path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" />
+      <path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c5.5 0 9 5.2 9 5.2a15.5 15.5 0 0 1-2.1 2.7" />
+      <path d="M6.6 6.6A15.6 15.6 0 0 0 3 9.2S6.5 14.4 12 14.4c.8 0 1.6-.1 2.3-.3" />
+    </svg>
+  ) : (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12s3.5-5.2 9-5.2 9 5.2 9 5.2-3.5 5.2-9 5.2S3 12 3 12Z" />
+      <circle cx="12" cy="12" r="2.4" />
+    </svg>
+  );
+}
+
+function getEmailError(value: string): string {
+  const email = value.trim();
+  if (!email) return "Email wajib diisi.";
+  if (email.length > 254) return "Email terlalu panjang.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return "Format email belum valid.";
+  return "";
+}
+
+function getPasswordError(value: string): string {
+  if (!value) return "Kata sandi wajib diisi.";
+  if (value.length < 8) return "Kata sandi minimal 8 karakter.";
+  if (value.length > 128) return "Kata sandi terlalu panjang.";
+  if (value !== value.trim()) return "Hapus spasi di awal atau akhir kata sandi.";
+  return "";
+}
 
 export default function Home() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  const emailError = emailTouched ? getEmailError(email) : "";
+  const passwordError = passwordTouched ? getPasswordError(password) : "";
+  const message = emailError || passwordError || (capsLock ? "Caps Lock sedang aktif." : notice);
+  const messageType = emailError || passwordError ? "error" : capsLock ? "warning" : "neutral";
+
+  function handleCapsLock(event: KeyboardEvent<HTMLInputElement>) {
+    setCapsLock(event.getModifierState("CapsLock"));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setEmailTouched(true);
+    setPasswordTouched(true);
+    setNotice("");
+
+    if (!getEmailError(email) && !getPasswordError(password)) {
+      setNotice("Autentikasi akan diaktifkan pada tahap fitur berikutnya.");
+    }
+  }
+
   return (
-    <main className="shell">
-      <section className="hero">
-        <div className="eyebrow">OBELIKS · Architecture Ready</div>
-        <h1>RPS OBE yang cepat, terstruktur, dan siap memakai AI.</h1>
-        <p className="lead">
-          Fondasi teknis telah memisahkan antarmuka, parsing dokumen, ekstraksi AI, dan data agar setiap bagian dapat berkembang tanpa menghambat bagian lain.
-        </p>
-        <div className="actions">
-          <a className="button primary" href="/prototype">Buka prototipe</a>
-          <a className="button" href="/api/health">Cek konfigurasi API</a>
-        </div>
-      </section>
-      <section className="grid" aria-label="Stack aplikasi">
-        {stack.map(([title, text]) => (
-          <article className="card" key={title}>
-            <strong>{title}</strong>
-            <p>{text}</p>
-          </article>
-        ))}
+    <main className="login-page">
+      <section className="login-card" aria-labelledby="login-title">
+        <h1 id="login-title">OBELIKS APPS</h1>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="field-group">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              inputMode="email"
+              autoComplete="username"
+              placeholder="nama@institusi.ac.id"
+              maxLength={254}
+              value={email}
+              aria-invalid={Boolean(emailError)}
+              aria-describedby="login-message"
+              onBlur={() => setEmailTouched(true)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setNotice("");
+              }}
+            />
+          </div>
+
+          <div className="field-group">
+            <label htmlFor="password">Kata sandi</label>
+            <div className="password-field">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                minLength={8}
+                maxLength={128}
+                value={password}
+                aria-invalid={Boolean(passwordError)}
+                aria-describedby="login-message"
+                onBlur={() => setPasswordTouched(true)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setNotice("");
+                }}
+                onKeyDown={handleCapsLock}
+                onKeyUp={handleCapsLock}
+              />
+              <button
+                className="password-toggle"
+                type="button"
+                aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((visible) => !visible)}
+              >
+                <EyeIcon hidden={showPassword} />
+              </button>
+            </div>
+          </div>
+
+          <button className="forgot-password" type="button" onClick={() => setNotice("Pemulihan kata sandi akan diaktifkan pada tahap fitur berikutnya.")}>
+            Lupa kata sandi?
+          </button>
+
+          <p id="login-message" className={`login-message ${messageType}`} role={messageType === "error" ? "alert" : "status"} aria-live="polite">
+            {message}
+          </p>
+
+          <button className="submit-button" type="submit">Masuk</button>
+        </form>
       </section>
     </main>
   );
 }
-
