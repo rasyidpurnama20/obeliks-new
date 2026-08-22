@@ -23,6 +23,7 @@ jobs:
   migrate:
     name: Migrate Supabase production
     runs-on: ubuntu-latest
+    environment: Production
     timeout-minutes: 10
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -36,11 +37,11 @@ jobs:
         run: |
           if [ -z "$SUPABASE_DB_URL" ]; then
             if [ "${{ github.event_name }}" = "pull_request" ]; then
-              echo "::warning::SUPABASE_DB_URL is not configured; migration dry-run was skipped."
+              echo "::warning::SUPABASE_DB_URL is not configured in GitHub Environment Production; migration dry-run was skipped."
               echo "configured=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            echo "SUPABASE_DB_URL is required before migrations can run on main."
+            echo "Add SUPABASE_DB_URL under GitHub Settings > Environments > Production > Environment secrets."
             exit 1
           fi
           echo "configured=true" >> "$GITHUB_OUTPUT"

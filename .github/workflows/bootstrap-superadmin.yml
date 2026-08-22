@@ -21,6 +21,7 @@ jobs:
   bootstrap:
     name: Invite and grant superadmin
     runs-on: ubuntu-latest
+    environment: Production
     timeout-minutes: 10
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -41,7 +42,7 @@ jobs:
         shell: bash
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-            echo "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to GitHub Actions secrets."
+            echo "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY under GitHub Settings > Environments > Production > Environment secrets."
             exit 1
           fi
 
