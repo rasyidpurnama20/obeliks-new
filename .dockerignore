@@ -1,0 +1,12 @@
+.git
+.github
+.next
+node_modules
+.env
+.env.*
+!.env.example
+project_sources
+services/parser/.venv
+services/parser/**/__pycache__
+*.log
+

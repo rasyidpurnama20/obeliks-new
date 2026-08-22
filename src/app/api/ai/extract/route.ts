@@ -13,6 +13,16 @@ const requestSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    if (process.env.AI_MODE !== "openai" || !process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        {
+          error: "ai_disabled",
+          message: "Rules-only mode is active. Configure AI_MODE=openai and an API key to enable extraction.",
+        },
+        { status: 503 },
+      );
+    }
+
     const payload = requestSchema.parse(await request.json());
     const supabase = getSupabaseAdmin();
     const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
