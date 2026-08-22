@@ -37,7 +37,7 @@ Gunakan tombol **Add secret**, bukan **Add variable**. Jangan membuat Environmen
 
 1. Buka GitHub → **Actions** → **Bootstrap superadmin**.
 2. Klik **Run workflow** pada branch `main`.
-3. Email superadmin sudah dikunci ke `rasyid.purnama20@gmail.com`; isi URL production Vercel.
+3. Email superadmin sudah dikunci ke `rasyid.purnama20@gmail.com`; URL production sudah terisi `https://obeliks-new.vercel.app`.
 4. Jalankan, lalu tunggu status hijau.
 5. Buka email undangan, buat kata sandi, lalu login.
 

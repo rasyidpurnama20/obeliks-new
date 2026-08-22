@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { normalizeProductionSiteUrl } from "./site-url.mjs";
 
 const email = process.env.SUPERADMIN_EMAIL?.trim().toLowerCase();
 const siteUrlInput = process.env.SITE_URL?.trim();
@@ -8,18 +9,11 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
   throw new Error("SUPERADMIN_EMAIL must contain a valid email address.");
 }
-if (!siteUrlInput) throw new Error("SITE_URL is required.");
 if (!supabaseUrl || !serviceRoleKey) {
   throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.");
 }
 
-const siteUrl = new URL(siteUrlInput);
-if (siteUrl.protocol !== "https:") {
-  throw new Error("SITE_URL must use HTTPS.");
-}
-siteUrl.pathname = "/";
-siteUrl.search = "";
-siteUrl.hash = "";
+const siteUrl = normalizeProductionSiteUrl(siteUrlInput);
 
 const redirectUrl = new URL("/reset-password", siteUrl);
 

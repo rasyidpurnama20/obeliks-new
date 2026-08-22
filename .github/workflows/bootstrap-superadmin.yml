@@ -6,8 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       site_url:
-        description: URL production Vercel, tanpa path
+        description: URL production Vercel lengkap
         required: true
+        default: https://obeliks-new.vercel.app
         type: string
 
 permissions:
