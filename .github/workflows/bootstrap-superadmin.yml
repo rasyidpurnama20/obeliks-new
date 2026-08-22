@@ -1,0 +1,56 @@
+name: Bootstrap superadmin
+
+run-name: Bootstrap superadmin for ${{ inputs.email }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: Email superadmin pertama
+        required: true
+        type: string
+      site_url:
+        description: URL production Vercel, tanpa path
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bootstrap-superadmin
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    name: Invite and grant superadmin
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPERADMIN_EMAIL: ${{ inputs.email }}
+      SITE_URL: ${{ inputs.site_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check required secrets
+        shell: bash
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to GitHub Actions secrets."
+            exit 1
+          fi
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Create the first superadmin safely
+        run: node scripts/bootstrap-superadmin.mjs

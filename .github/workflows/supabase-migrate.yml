@@ -1,6 +1,10 @@
 name: Database migrations
 
 on:
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - ".github/workflows/supabase-migrate.yml"
   push:
     branches: [main]
     paths:
@@ -12,7 +16,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: supabase-production-migrations
+  group: supabase-migrations-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -42,9 +46,9 @@ jobs:
       - name: Preview pending migrations
         run: supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
 
-      - name: Apply pending migrations
+      - name: Apply pending migrations after merge
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: supabase db push --db-url "$SUPABASE_DB_URL"
 
       - name: Show migration status
         run: supabase migration list --db-url "$SUPABASE_DB_URL"
-

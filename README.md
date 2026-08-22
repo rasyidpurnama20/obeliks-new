@@ -28,6 +28,7 @@ File diunggah langsung dari browser ke Supabase Storage melalui signed upload UR
 ## Dokumentasi
 
 - [`docs/DEPLOYMENT_FREE.md`](docs/DEPLOYMENT_FREE.md) — langkah setelah login Supabase dan Vercel.
+- [`docs/AUTH_SUPERADMIN.md`](docs/AUTH_SUPERADMIN.md) — aktivasi login dan superadmin pertama.
 - [`docs/SELF_HOSTING.md`](docs/SELF_HOSTING.md) — rencana pemindahan ke server sendiri.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — keputusan arsitektur dan alur data.
 
@@ -45,4 +46,3 @@ File diunggah langsung dari browser ke Supabase Storage melalui signed upload UR
 - `POST /api/ai/extract` — ekstraksi terstruktur opsional.
 
 Semua endpoint mutasi membutuhkan Supabase access token dan memeriksa keanggotaan organisasi. Service-role key, parser token, dan API key AI hanya boleh disimpan sebagai server environment variables.
-
