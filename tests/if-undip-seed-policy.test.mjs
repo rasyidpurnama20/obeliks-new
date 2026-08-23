@@ -16,6 +16,10 @@ const markdown = await readFile(
   new URL("../docs/IF_UNDIP_PUBLIC_DATA.md", import.meta.url),
   "utf8",
 );
+const provisioningWorkflow = await readFile(
+  new URL("../.github/workflows/provision-if-undip-lecturers.yml", import.meta.url),
+  "utf8",
+);
 const missingEmailOverrides = Object.fromEntries(
   snapshot.lecturers
     .filter((lecturer) => lecturer.email_status === "not_found")
@@ -44,6 +48,23 @@ test("validates the authoritative IF UNDIP snapshot contract", () => {
   );
   assert.equal(typeof homebase.find((item) => item.external_id.startsWith("H.7."))?.external_id, "string");
   assert.equal(snapshot.availability.course_learning_outcomes, "not_published");
+});
+
+test("validation mode does not require production provisioning secrets", () => {
+  const validationStep = provisioningWorkflow.slice(
+    provisioningWorkflow.indexOf("- name: Validate public lecturer snapshot"),
+    provisioningWorkflow.indexOf("- name: Stage lecturer accounts"),
+  );
+  assert.match(validationStep, /if: inputs\.apply_changes == false/);
+  assert.match(validationStep, /run: npm run test:if-undip-data/);
+  assert.doesNotMatch(validationStep, /secrets\./);
+
+  const applyCheck = provisioningWorkflow.slice(
+    provisioningWorkflow.indexOf("- name: Check apply secrets and confirmation"),
+    provisioningWorkflow.indexOf("- name: Install locked dependencies"),
+  );
+  assert.match(applyCheck, /if: inputs\.apply_changes == true/);
+  assert.match(applyCheck, /LECTURER_EMAIL_MAP_JSON: \$\{\{ secrets\.LECTURER_EMAIL_MAP_JSON \}\}/);
 });
 
 test("preserves the 2024 OBE catalog totals without double-counting religion alternatives", () => {
