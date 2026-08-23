@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
-export type BootstrapPasswordResult = {
+type BootstrapPasswordResult = {
   ok: boolean;
   message: string;
 };
