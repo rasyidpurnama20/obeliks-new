@@ -1,0 +1,97 @@
+name: Provision IF UNDIP lecturers
+
+run-name: ${{ inputs.apply_changes && 'Provision' || 'Validate' }} IF UNDIP lecturer accounts
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_changes:
+        description: Create or reconcile the staged lecturer accounts
+        required: true
+        default: false
+        type: boolean
+      confirm_email_owners:
+        description: I verified every current institutional mailbox owner
+        required: true
+        default: false
+        type: boolean
+      organization_slug:
+        description: Existing organization slug
+        required: true
+        default: informatika-undip
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provision-if-undip-lecturers
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    name: Validate and stage lecturer accounts
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check email-map secret
+        shell: bash
+        env:
+          LECTURER_EMAIL_MAP_JSON: ${{ secrets.LECTURER_EMAIL_MAP_JSON }}
+        run: |
+          if [ -z "$LECTURER_EMAIL_MAP_JSON" ]; then
+            echo "Add LECTURER_EMAIL_MAP_JSON to the Production environment secrets with all missing or corrected email mappings."
+            exit 1
+          fi
+
+      - name: Check apply secrets and confirmation
+        if: inputs.apply_changes == true
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LECTURER_INITIAL_PASSWORD: ${{ secrets.LECTURER_INITIAL_PASSWORD }}
+          LECTURER_EMAILS_CONFIRMED: ${{ inputs.confirm_email_owners }}
+        run: |
+          if [ "$LECTURER_EMAILS_CONFIRMED" != "true" ]; then
+            echo "Confirm the current mailbox owners before applying account changes."
+            exit 1
+          fi
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] || [ -z "$LECTURER_INITIAL_PASSWORD" ]; then
+            echo "Add SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and LECTURER_INITIAL_PASSWORD to Production environment secrets."
+            exit 1
+          fi
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Validate lecturer account plan
+        if: inputs.apply_changes == false
+        env:
+          LECTURER_EMAIL_MAP_JSON: ${{ secrets.LECTURER_EMAIL_MAP_JSON }}
+          LECTURER_ALLOWED_EMAIL_DOMAIN_SUFFIX: undip.ac.id
+        run: npm run seed:if-undip-lecturers
+
+      - name: Stage lecturer accounts
+        if: inputs.apply_changes == true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LECTURER_EMAIL_MAP_JSON: ${{ secrets.LECTURER_EMAIL_MAP_JSON }}
+          LECTURER_INITIAL_PASSWORD: ${{ secrets.LECTURER_INITIAL_PASSWORD }}
+          LECTURER_ALLOWED_EMAIL_DOMAIN_SUFFIX: undip.ac.id
+          LECTURER_ORGANIZATION_SLUG: ${{ inputs.organization_slug }}
+          LECTURER_EMAILS_CONFIRMED: ${{ inputs.confirm_email_owners }}
+          LECTURER_SEED_APPLY: "true"
+        run: npm run seed:if-undip-lecturers

@@ -9,10 +9,12 @@
     "build:standalone": "NEXT_OUTPUT=standalone next build",
     "start": "next start",
     "test:bootstrap": "node --test tests/bootstrap-site-url.test.mjs",
+    "test:if-undip-data": "node --test tests/if-undip-seed-policy.test.mjs",
     "test:rps-authoring": "node --no-warnings --experimental-strip-types --test tests/rps-authoring-validation.test.mjs",
     "test:rps-template": "node --test tests/rps-template-contract.test.mjs",
     "test:superadmin-password": "node --test tests/superadmin-password-policy.test.mjs",
     "test:teaching-navigation": "node --no-warnings --experimental-strip-types --test tests/teaching-navigation.test.mjs",
+    "seed:if-undip-lecturers": "node scripts/seed-if-undip-lecturers.mjs",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
