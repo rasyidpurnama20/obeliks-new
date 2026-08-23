@@ -16,6 +16,10 @@ const labels: Record<NavigationItemId, string> = {
   pengaturan: "Pengaturan",
 };
 
+function announceNavigation() {
+  window.dispatchEvent(new Event("obeliks:navigation"));
+}
+
 function findNavButton(screen: NavigationItemId) {
   const label = labels[screen];
   return [...document.querySelectorAll<HTMLButtonElement>('nav[aria-label="Navigasi utama"] button')]
@@ -35,7 +39,10 @@ function activateScreen(screen: NavigationItemId, replaceAfter = true) {
     const currentPath = window.location.pathname.length > 1 ? window.location.pathname.replace(/\/$/, "") : window.location.pathname;
     const preserveNestedPath = currentPath.startsWith(`${basePath}/`);
     if (!preserveNestedPath) {
-      window.requestAnimationFrame(() => window.history.replaceState(null, "", basePath));
+      window.requestAnimationFrame(() => {
+        window.history.replaceState(null, "", basePath);
+        announceNavigation();
+      });
     }
   }
 }
@@ -46,24 +53,23 @@ export function RouteCoordinator({ initialScreen }: { initialScreen: NavigationI
     const originalReplaceState = window.history.replaceState.bind(window.history);
 
     window.history.pushState = ((data: unknown, unused: string, url?: string | URL | null) => {
-      if (url) {
-        const canonical = canonicalizeDashboardUrl(url, window.location.origin);
-        if (canonical) return originalPushState(data, unused, canonical);
-      }
-      return originalPushState(data, unused, url);
+      const canonical = url ? canonicalizeDashboardUrl(url, window.location.origin) : null;
+      const result = originalPushState(data, unused, canonical ?? url);
+      announceNavigation();
+      return result;
     }) as History["pushState"];
 
     window.history.replaceState = ((data: unknown, unused: string, url?: string | URL | null) => {
-      if (url) {
-        const canonical = canonicalizeDashboardUrl(url, window.location.origin);
-        if (canonical) return originalReplaceState(data, unused, canonical);
-      }
-      return originalReplaceState(data, unused, url);
+      const canonical = url ? canonicalizeDashboardUrl(url, window.location.origin) : null;
+      const result = originalReplaceState(data, unused, canonical ?? url);
+      announceNavigation();
+      return result;
     }) as History["replaceState"];
 
     const boot = window.setTimeout(() => activateScreen(initialScreen), 0);
 
     const onPopState = () => {
+      announceNavigation();
       const target = screenFromPathname(window.location.pathname) ?? "dashboard";
       window.setTimeout(() => activateScreen(target, true), 0);
     };
