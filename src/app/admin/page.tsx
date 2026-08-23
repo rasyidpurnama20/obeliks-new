@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { signOut } from "./actions";
 import { DashboardApp } from "./dashboard-app";
+import { DashboardShellControls } from "./dashboard-shell-controls";
 import type { ManagedUser } from "@/lib/admin/user-types";
 import type { RoleId } from "@/lib/mvp/types";
 import { getManagedOrganization, loadManagedUsers } from "@/lib/admin/users-server";
@@ -50,14 +51,19 @@ export default async function AdminPage() {
     managedUsers = await loadManagedUsers(admin, user.id, organization.id);
   }
 
+  const email = user.email ?? "superadmin@obeliks.app";
+
   return (
-    <DashboardApp
-      availableRoles={availableRoles}
-      displayName={profile.display_name}
-      email={user.email ?? "superadmin@obeliks.app"}
-      initialManagedUsers={managedUsers}
-      initialRole={availableRoles[0]}
-      signOutAction={signOut}
-    />
+    <>
+      <DashboardApp
+        availableRoles={availableRoles}
+        displayName={profile.display_name}
+        email={email}
+        initialManagedUsers={managedUsers}
+        initialRole={availableRoles[0]}
+        signOutAction={signOut}
+      />
+      <DashboardShellControls displayName={profile.display_name} email={email} />
+    </>
   );
 }
