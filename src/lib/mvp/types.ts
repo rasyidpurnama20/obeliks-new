@@ -207,6 +207,14 @@ export interface RpsRecord {
 
 export type WorkspaceTabId = "rps" | "pelaksanaan" | "evaluasi" | "riwayat";
 
+export type TeachingSubnavigationId = "courses" | WorkspaceTabId;
+
+export interface TeachingSubnavigationItem {
+  id: TeachingSubnavigationId;
+  label: string;
+  description: string;
+}
+
 export interface WorkspaceTab {
   id: WorkspaceTabId;
   label: string;

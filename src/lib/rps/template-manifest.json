@@ -1,0 +1,457 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "rps-obe-format-lengkap-v1",
+  "displayName": "Template RPS OBE Format Lengkap",
+  "templateVersion": "1.0.0",
+  "sourceFileName": "Template_RPS_OBE_Format_Lengkap.docx",
+  "publicHref": "/templates/Template_RPS_OBE_Format_Lengkap.docx",
+  "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "sha256": "4708bba1e1d7f5ecf6780d41093ec9726e88b0bb064dad39aa3f546f05876c2b",
+  "fileSizeBytes": 65470,
+  "pageCount": 12,
+  "tableCount": 22,
+  "derivedTableNumbers": [8, 9, 10, 11, 12, 13, 17, 18],
+  "sourceIntegrity": {
+    "preservedByteForByte": true,
+    "containsMacros": false,
+    "usesContentControls": false,
+    "inputModel": "table-placeholders"
+  },
+  "workflowSteps": [
+    {
+      "id": "identity",
+      "order": 1,
+      "label": "Identitas Mata Kuliah"
+    },
+    {
+      "id": "outcomes",
+      "order": 2,
+      "label": "Capaian Pembelajaran"
+    },
+    {
+      "id": "alignment",
+      "order": 3,
+      "label": "Alignment OBE"
+    },
+    {
+      "id": "assessment",
+      "order": 4,
+      "label": "Asesmen & Metode"
+    },
+    {
+      "id": "weekly-plan",
+      "order": 5,
+      "label": "Rencana Mingguan"
+    },
+    {
+      "id": "validation",
+      "order": 6,
+      "label": "Validasi & Pengesahan"
+    }
+  ],
+  "sections": [
+    {
+      "id": "course-identity",
+      "order": 1,
+      "label": "Identitas, otorisasi, dan deskripsi mata kuliah",
+      "pageRange": "1",
+      "workflowStepId": "identity",
+      "requiredFields": [
+        "course.code",
+        "course.name",
+        "course.credits",
+        "course.semester",
+        "course.programId",
+        "course.description",
+        "authorUserId"
+      ]
+    },
+    {
+      "id": "learning-outcomes",
+      "order": 2,
+      "label": "CPL, CPMK, Sub-CPMK, matriks keterkaitan, prasyarat, dan referensi",
+      "pageRange": "1-2",
+      "workflowStepId": "outcomes",
+      "requiredFields": [
+        "programOutcomes",
+        "courseOutcomes",
+        "subCourseOutcomes",
+        "outcomeMappings",
+        "references"
+      ]
+    },
+    {
+      "id": "weekly-learning-plan",
+      "order": 3,
+      "label": "Rencana pembelajaran per pertemuan",
+      "pageRange": "3",
+      "workflowStepId": "weekly-plan",
+      "requiredFields": [
+        "meetings",
+        "meetings[].subCourseOutcomeId",
+        "meetings[].learningMaterials",
+        "meetings[].learningMethods",
+        "meetings[].studentActivities",
+        "meetings[].assessmentIndicatorIds"
+      ]
+    },
+    {
+      "id": "assessment-design",
+      "order": 4,
+      "label": "Indikator, kriteria, teknik, dan bobot penilaian",
+      "pageRange": "4",
+      "workflowStepId": "assessment",
+      "requiredFields": [
+        "assessmentIndicators",
+        "assessmentComponents",
+        "assessmentComponents[].weightPercent"
+      ]
+    },
+    {
+      "id": "course-outline",
+      "order": 5,
+      "label": "Course outline",
+      "pageRange": "5",
+      "workflowStepId": "alignment",
+      "requiredFields": [
+        "courseOutline"
+      ]
+    },
+    {
+      "id": "learning-material-distribution",
+      "order": 6,
+      "label": "Distribusi bahan kajian",
+      "pageRange": "6",
+      "workflowStepId": "alignment",
+      "requiredFields": [
+        "learningMaterials",
+        "learningMaterialMappings"
+      ]
+    },
+    {
+      "id": "evaluation-plan",
+      "order": 7,
+      "label": "Rencana evaluasi dan matriks asesmen–CPMK",
+      "pageRange": "7",
+      "workflowStepId": "assessment",
+      "requiredFields": [
+        "evaluationPlan",
+        "assessmentOutcomeMappings"
+      ]
+    },
+    {
+      "id": "outcome-weighting",
+      "order": 8,
+      "label": "Kepentingan CPL dan pembobotan CPMK–CPL",
+      "pageRange": "8",
+      "workflowStepId": "alignment",
+      "requiredFields": [
+        "programOutcomePriorities",
+        "courseProgramOutcomeWeights"
+      ]
+    },
+    {
+      "id": "rubrics-and-evidence",
+      "order": 9,
+      "label": "Rubrik analitik, butir asesmen, dan register bukti",
+      "pageRange": "9",
+      "workflowStepId": "assessment",
+      "requiredFields": [
+        "rubrics",
+        "assessmentItems",
+        "evidenceRegister"
+      ]
+    },
+    {
+      "id": "attainment",
+      "order": 10,
+      "label": "Ketercapaian CPMK dan CPL",
+      "pageRange": "10",
+      "workflowStepId": "validation",
+      "requiredFields": [
+        "attainmentRecords"
+      ]
+    },
+    {
+      "id": "delivery-and-improvement",
+      "order": 11,
+      "label": "Pelaksanaan, analisis gap, tindak lanjut, dan perubahan RPS",
+      "pageRange": "11",
+      "workflowStepId": "validation",
+      "requiredFields": [
+        "deliveryRecords",
+        "gapAnalysis",
+        "improvementActions",
+        "revisionLog"
+      ]
+    },
+    {
+      "id": "approval",
+      "order": 12,
+      "label": "Pengesahan",
+      "pageRange": "12",
+      "workflowStepId": "validation",
+      "requiredFields": [
+        "approvals.author",
+        "approvals.reviewer",
+        "approvals.approver"
+      ]
+    }
+  ],
+  "policyDependencies": [
+    {
+      "id": "program-period-policy",
+      "scopeKeys": [
+        "institutionId",
+        "programId",
+        "periodId"
+      ],
+      "requiredFields": [
+        "expectedMeetingCount",
+        "effectiveFrom",
+        "effectiveUntil"
+      ],
+      "hasUniversalDefault": false
+    },
+    {
+      "id": "program-assessment-policy",
+      "scopeKeys": [
+        "institutionId",
+        "programId",
+        "periodId"
+      ],
+      "requiredFields": [
+        "effectiveFrom",
+        "effectiveUntil"
+      ],
+      "optionalFields": [
+        "requiredAssessmentMilestones",
+        "attainmentThresholds"
+      ],
+      "hasUniversalDefault": false
+    }
+  ],
+  "validationRules": [
+    {
+      "id": "authoring-required-fields-complete",
+      "label": "Semua field wajib untuk pengajuan RPS terisi",
+      "kind": "presence",
+      "sectionIds": [
+        "course-identity",
+        "learning-outcomes",
+        "weekly-learning-plan",
+        "assessment-design",
+        "course-outline",
+        "learning-material-distribution",
+        "evaluation-plan",
+        "outcome-weighting",
+        "rubrics-and-evidence"
+      ],
+      "transition": "submit-for-review",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Daftar path field kosong, tanpa penilaian kualitas narasi."
+    },
+    {
+      "id": "evaluation-required-fields-complete",
+      "label": "Semua field wajib untuk menutup evaluasi mata kuliah terisi",
+      "kind": "presence",
+      "sectionIds": [
+        "attainment",
+        "delivery-and-improvement"
+      ],
+      "transition": "close-evaluation",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Daftar path evaluasi yang kosong, tanpa penilaian identitas pelaksana."
+    },
+    {
+      "id": "entity-keys-unique",
+      "label": "Kode dan ID entitas unik dalam satu versi RPS",
+      "kind": "uniqueness",
+      "sectionIds": [
+        "learning-outcomes",
+        "weekly-learning-plan",
+        "assessment-design",
+        "learning-material-distribution",
+        "rubrics-and-evidence"
+      ],
+      "transition": "submit-for-review",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Daftar ID atau kode yang duplikat."
+    },
+    {
+      "id": "foreign-keys-resolve",
+      "label": "Semua relasi CPL, CPMK, Sub-CPMK, asesmen, bahan kajian, dan bukti valid",
+      "kind": "referential-integrity",
+      "sectionIds": [
+        "learning-outcomes",
+        "weekly-learning-plan",
+        "learning-material-distribution",
+        "evaluation-plan",
+        "rubrics-and-evidence"
+      ],
+      "transition": "submit-for-review",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Daftar foreign key yang tidak menemukan entitas induk."
+    },
+    {
+      "id": "outcome-hierarchy-complete",
+      "label": "Setiap CPMK terhubung ke CPL dan setiap Sub-CPMK terhubung ke CPMK",
+      "kind": "coverage",
+      "sectionIds": [
+        "learning-outcomes"
+      ],
+      "transition": "submit-for-review",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Daftar outcome yang tidak memiliki relasi induk."
+    },
+    {
+      "id": "meeting-count-matches-effective-policy",
+      "label": "Jumlah rencana pertemuan sesuai kebijakan periode yang berlaku",
+      "kind": "policy-match",
+      "sectionIds": [
+        "weekly-learning-plan"
+      ],
+      "policyDependencyId": "program-period-policy",
+      "policyField": "expectedMeetingCount",
+      "transition": "submit-for-review",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Jumlah pertemuan aktual, nilai kebijakan, cakupan prodi/periode, dan tanggal berlaku."
+    },
+    {
+      "id": "assessment-weight-total-100",
+      "label": "Total bobot komponen asesmen tepat 100%",
+      "kind": "numeric-total",
+      "sectionIds": [
+        "assessment-design",
+        "evaluation-plan"
+      ],
+      "transition": "submit-for-review",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Rincian bobot per komponen dan hasil penjumlahan."
+    },
+    {
+      "id": "assessment-outcome-coverage",
+      "label": "Setiap CPMK memiliki asesmen dan bukti yang dapat ditelusuri",
+      "kind": "coverage",
+      "sectionIds": [
+        "evaluation-plan",
+        "rubrics-and-evidence"
+      ],
+      "transition": "submit-for-review",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Daftar CPMK tanpa komponen asesmen atau register bukti."
+    },
+    {
+      "id": "authoring-policy-effective",
+      "label": "Aturan kalender dan milestone menggunakan kebijakan prodi/periode yang masih berlaku",
+      "kind": "policy-validity",
+      "sectionIds": [
+        "weekly-learning-plan",
+        "assessment-design"
+      ],
+      "transition": "submit-for-review",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "ID kebijakan, scope prodi/periode, effectiveFrom, effectiveUntil, dan waktu evaluasi."
+    },
+    {
+      "id": "attainment-policy-effective",
+      "label": "Ambang ketercapaian menggunakan kebijakan prodi/periode yang masih berlaku",
+      "kind": "policy-validity",
+      "sectionIds": [
+        "attainment"
+      ],
+      "policyDependencyId": "program-assessment-policy",
+      "policyField": "attainmentThresholds",
+      "transition": "close-evaluation",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "ID kebijakan, scope prodi/periode, effectiveFrom, effectiveUntil, ambang terpakai, dan waktu evaluasi."
+    },
+    {
+      "id": "approval-records-complete",
+      "label": "Rekam pengesahan penyusun, penelaah, dan penyetuju lengkap",
+      "kind": "presence",
+      "sectionIds": [
+        "approval"
+      ],
+      "transition": "publish-rps",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Actor ID, peran, keputusan, dan timestamp yang belum tersedia."
+    },
+    {
+      "id": "approval-order-valid",
+      "label": "Pengesahan mengikuti urutan penyusun, penelaah, lalu penyetuju",
+      "kind": "workflow-order",
+      "sectionIds": [
+        "approval"
+      ],
+      "transition": "publish-rps",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Peran, actor ID, keputusan, dan timestamp setiap tahap."
+    },
+    {
+      "id": "no-self-approval",
+      "label": "Penyusun, penelaah, dan penyetuju adalah actor yang berbeda",
+      "kind": "separation-of-duties",
+      "sectionIds": [
+        "approval"
+      ],
+      "transition": "publish-rps",
+      "deterministic": true,
+      "blocksTransition": true,
+      "evidence": "Perbandingan actor ID antar-tahap; atribut pribadi tidak digunakan."
+    }
+  ],
+  "neutralityPolicy": {
+    "validationMode": "deterministic-structure-only",
+    "allowedInputScopes": [
+      "document-structure",
+      "entity-identifiers",
+      "relationship-integrity",
+      "numeric-totals",
+      "effective-program-policy",
+      "workflow-events"
+    ],
+    "prohibitedPersonalAttributes": [
+      "religion",
+      "ethnicity",
+      "race",
+      "gender",
+      "disability",
+      "age",
+      "maritalStatus",
+      "politicalAffiliation",
+      "economicStatus"
+    ],
+    "ai": {
+      "advisoryOnly": true,
+      "requiresExplicitHumanAcceptance": true,
+      "mayApprove": false,
+      "mayReject": false,
+      "mayAssignGrades": false,
+      "mayChangePolicy": false
+    },
+    "humanDecision": {
+      "authorRole": "dosen",
+      "reviewerRole": "gpm",
+      "approverRole": "kaprodi",
+      "administratorMayApproveAcademicContent": false,
+      "selfApprovalAllowed": false
+    },
+    "explanationRequired": true,
+    "universalMeetingCount": null,
+    "universalAssessmentMilestones": null,
+    "universalAttainmentThreshold": null
+  }
+}
