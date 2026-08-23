@@ -66,10 +66,10 @@ function actionPath(action: ActionItem) {
 function navigateClient(path: string, replace = false) {
   const target = new URL(path, window.location.origin);
   if (target.origin !== window.location.origin) return;
-  if (replace) window.history.replaceState(null, "", `${target.pathname}${target.search}${target.hash}`);
-  else if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== `${target.pathname}${target.search}${target.hash}`) {
-    window.history.pushState(null, "", `${target.pathname}${target.search}${target.hash}`);
-  }
+  const next = `${target.pathname}${target.search}${target.hash}`;
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (replace) window.history.replaceState(null, "", next);
+  else if (current !== next) window.history.pushState(null, "", next);
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
@@ -92,6 +92,7 @@ export function DashboardShellControls({ displayName, email, managedUsers = [] }
     let disposed = false;
     let frame = 0;
     let boundSelect: HTMLSelectElement | null = null;
+    let boundHandler: (() => void) | null = null;
 
     const sync = (select: HTMLSelectElement) => {
       const nextRole = roleForValue(select.value);
@@ -107,22 +108,18 @@ export function DashboardShellControls({ displayName, email, managedUsers = [] }
         if (attempt < 12) frame = window.requestAnimationFrame(() => bind(attempt + 1));
         return;
       }
+      const handler = () => sync(select);
       boundSelect = select;
+      boundHandler = handler;
       sync(select);
-      select.addEventListener("change", () => sync(select));
+      select.addEventListener("change", handler);
     };
 
     bind();
     return () => {
       disposed = true;
       if (frame) window.cancelAnimationFrame(frame);
-      if (boundSelect) {
-        const select = boundSelect;
-        // A cloned select has no listeners; replacing it is safer than retaining
-        // a document-wide MutationObserver that used to create a render loop.
-        const clone = select.cloneNode(true);
-        select.parentNode?.replaceChild(clone, select);
-      }
+      if (boundSelect && boundHandler) boundSelect.removeEventListener("change", boundHandler);
     };
   }, []);
 
