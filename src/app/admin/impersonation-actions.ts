@@ -32,10 +32,16 @@ async function requireActiveSuperadmin() {
   return { actorUserId: user.id, admin: getSupabaseAdmin() };
 }
 
-function failure(error: unknown, fallbackMessage: string): ImpersonationActionResult {
+function startFailure(error: unknown): ImpersonationActionResult {
   if (error instanceof ImpersonationActionError) return { ok: false, message: error.message };
-  console.error("Support impersonation action failed", error instanceof Error ? error.message : "unknown_error");
-  return { ok: false, message: fallbackMessage };
+  console.error("Support impersonation start failed", error instanceof Error ? error.message : "unknown_error");
+  return { ok: false, message: "Mode impersonasi tidak dapat dimulai. Tidak ada sesi pengguna yang diambil alih." };
+}
+
+function stopFailure(error: unknown): ImpersonationActionResult {
+  if (error instanceof ImpersonationActionError) return { ok: false, message: error.message };
+  console.error("Support impersonation stop failed", error instanceof Error ? error.message : "unknown_error");
+  return { ok: false, message: "Mode impersonasi belum dapat dihentikan dengan aman. Coba lagi." };
 }
 
 export async function startSupportImpersonation(input: unknown): Promise<ImpersonationActionResult> {
@@ -66,33 +72,32 @@ export async function startSupportImpersonation(input: unknown): Promise<Imperso
         expires_in_seconds: IMPERSONATION_MAX_AGE_SECONDS,
       },
     });
-    if (auditError) {
-      throw new ImpersonationActionError("Impersonasi tidak dimulai karena audit belum dapat dicatat.");
-    }
+    if (auditError) throw new ImpersonationActionError("Impersonasi tidak dimulai karena audit belum dapat dicatat.");
 
     const cookieStore = await cookies();
     cookieStore.set(IMPERSONATION_COOKIE, targetUserId, {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      path: "/admin",
+      path: "/",
       maxAge: IMPERSONATION_MAX_AGE_SECONDS,
     });
 
-    revalidatePath("/admin");
+    revalidatePath("/dashboard");
     return {
       ok: true,
       message: "Mode impersonasi dimulai. Sesi login tetap milik Superadmin dan tampilan memakai peran akun target.",
     };
   } catch (error) {
-    return failure(error, "Mode impersonasi tidak dapat dimulai. Tidak ada sesi pengguna yang diambil alih.");
+    return startFailure(error);
   }
 }
 
 export async function stopSupportImpersonation(): Promise<ImpersonationActionResult> {
+  let cookieStore: Awaited<ReturnType<typeof cookies>> | null = null;
   try {
     const { actorUserId, admin } = await requireActiveSuperadmin();
-    const cookieStore = await cookies();
+    cookieStore = await cookies();
     const targetUserId = cookieStore.get(IMPERSONATION_COOKIE)?.value ?? null;
     let auditWarning = false;
 
@@ -103,10 +108,7 @@ export async function stopSupportImpersonation(): Promise<ImpersonationActionRes
           actor_user_id: actorUserId,
           target_user_id: targetUserId,
           action: "account.impersonation_ended",
-          metadata: {
-            organization_id: organization.id,
-            mode: "read_only_support_view",
-          },
+          metadata: { organization_id: organization.id, mode: "read_only_support_view" },
         });
         auditWarning = Boolean(auditError);
         if (auditError) console.error("Impersonation end audit failed", auditError.message);
@@ -116,19 +118,15 @@ export async function stopSupportImpersonation(): Promise<ImpersonationActionRes
       }
     }
 
-    // The impersonation cookie is scoped to /admin. Clearing it with the same
-    // path is required; a name-only delete may emit a Path=/ tombstone and
-    // leave the original /admin cookie active in the browser.
     cookieStore.set(IMPERSONATION_COOKIE, "", {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      path: "/admin",
+      path: "/",
       maxAge: 0,
       expires: new Date(0),
     });
-
-    revalidatePath("/admin");
+    revalidatePath("/dashboard");
     return {
       ok: true,
       message: auditWarning
@@ -136,6 +134,16 @@ export async function stopSupportImpersonation(): Promise<ImpersonationActionRes
         : "Mode impersonasi dihentikan dan Anda kembali sebagai Superadmin.",
     };
   } catch (error) {
-    return failure(error, "Mode impersonasi tidak dapat dihentikan. Muat ulang lalu coba kembali sebagai Superadmin.");
+    if (cookieStore) {
+      cookieStore.set(IMPERSONATION_COOKIE, "", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 0,
+        expires: new Date(0),
+      });
+    }
+    return stopFailure(error);
   }
 }
