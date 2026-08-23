@@ -7,7 +7,7 @@ export default async function Home() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
-    if (user.user_metadata?.must_change_password === true) {
+    if (user.app_metadata?.bootstrap_password === true) {
       redirect("/reset-password?required=1");
     }
 
