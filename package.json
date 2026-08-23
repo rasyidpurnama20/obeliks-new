@@ -12,6 +12,7 @@
     "test:admin-users": "node --no-warnings --experimental-strip-types --test tests/admin-user-management.test.mjs",
     "test:impersonation": "node --test tests/impersonation-policy.test.mjs",
     "test:navigation-shell": "node --no-warnings --experimental-strip-types --test tests/navigation-shell.test.mjs",
+    "test:user-onboarding": "node --test tests/user-onboarding-modes.test.mjs",
     "test:if-undip-data": "node --test tests/if-undip-seed-policy.test.mjs",
     "test:rps-authoring": "node --no-warnings --experimental-strip-types --test tests/rps-authoring-validation.test.mjs",
     "test:rps-template": "node --test tests/rps-template-contract.test.mjs",
