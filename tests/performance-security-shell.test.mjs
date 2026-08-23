@@ -4,6 +4,7 @@ import test from "node:test";
 
 const shell = await readFile(new URL("../src/app/admin/dashboard-shell-controls.tsx", import.meta.url), "utf8");
 const period = await readFile(new URL("../src/app/admin/institution-period-panel.tsx", import.meta.url), "utf8");
+const coordinator = await readFile(new URL("../src/app/admin/route-coordinator.tsx", import.meta.url), "utf8");
 const config = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
 const login = await readFile(new URL("../src/app/login-form.tsx", import.meta.url), "utf8");
 const home = await readFile(new URL("../src/app/page.tsx", import.meta.url), "utf8");
@@ -20,8 +21,10 @@ test("global shell does not observe every body mutation or rewrite React DOM dur
 test("institution period panel is route/event driven instead of body-mutation driven", () => {
   assert.doesNotMatch(period, /observer\.observe\(document\.body/);
   assert.doesNotMatch(period, /new MutationObserver/);
-  assert.match(period, /window\.location\.pathname === "\/institusi-periode"/);
-  assert.match(period, /addEventListener\("popstate", syncRoute\)/);
+  assert.match(period, /window\.location\.pathname/);
+  assert.match(period, /addEventListener\("popstate", sync\)/);
+  assert.match(period, /addEventListener\("obeliks:navigation", sync\)/);
+  assert.match(coordinator, /announceNavigation/);
 });
 
 test("menu navigation remains client-side and avoids full document reloads", () => {
