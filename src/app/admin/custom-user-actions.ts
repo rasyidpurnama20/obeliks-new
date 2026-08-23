@@ -7,7 +7,7 @@ import { ManagedUserInputError, parseManagedUserDraft } from "@/lib/admin/user-p
 import { getManagedOrganization, loadManagedUsers } from "@/lib/admin/users-server";
 import type { ManagedUserActionResult } from "@/lib/admin/user-types";
 
-export const DEFAULT_CUSTOM_USER_PASSWORD = "user123";
+const DEFAULT_CUSTOM_USER_PASSWORD = "user123";
 const PERMANENT_BAN_DURATION = "876000h";
 
 type CustomUserSource = "manual" | "siap";
