@@ -17,6 +17,10 @@ import type { NavigationItemId, RoleId } from "@/lib/mvp/types";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
+function roleCanOpen(role: RoleId, screen: NavigationItemId) {
+  return getNavigationForRole(role).some((section) => section.items.some((item) => item.id === screen));
+}
+
 export async function DashboardEntry({ initialScreen }: { initialScreen: NavigationItemId }) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -77,10 +81,8 @@ export async function DashboardEntry({ initialScreen }: { initialScreen: Navigat
   const effectiveRoles: RoleId[] = impersonatedUser ? [...impersonatedUser.roles] : availableRoles;
   const effectiveDisplayName = impersonatedUser?.name ?? profile.display_name;
   const effectiveEmail = impersonatedUser?.email ?? email;
-  const allowedScreens = new Set(
-    getNavigationForRole(effectiveRoles[0]).flatMap((section) => section.items.map((item) => item.id)),
-  );
-  if (!allowedScreens.has(initialScreen)) redirect("/dashboard");
+  const initialRole = effectiveRoles.find((role) => roleCanOpen(role, initialScreen));
+  if (!initialRole) redirect("/dashboard");
 
   return (
     <>
@@ -90,7 +92,7 @@ export async function DashboardEntry({ initialScreen }: { initialScreen: Navigat
         displayName={effectiveDisplayName}
         email={effectiveEmail}
         initialManagedUsers={impersonatedUser ? [] : managedUsers}
-        initialRole={effectiveRoles[0]}
+        initialRole={initialRole}
         signOutAction={signOut}
       />
       <DashboardShellControls
@@ -98,7 +100,7 @@ export async function DashboardEntry({ initialScreen }: { initialScreen: Navigat
         email={effectiveEmail}
         managedUsers={impersonatedUser ? [] : managedUsers}
       />
-      <InstitutionPeriodPanel initialRole={effectiveRoles[0]} />
+      <InstitutionPeriodPanel initialRole={initialRole} />
       {isSuperadmin && !impersonatedUser ? <UserAccessControls initialUsers={managedUsers} /> : null}
       {isSuperadmin && !impersonatedUser ? <UserAccessEnhancements users={managedUsers} /> : null}
       {isSuperadmin && !impersonatedUser ? <UserFilterUnifier /> : null}
