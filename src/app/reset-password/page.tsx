@@ -73,7 +73,7 @@ export default function ResetPasswordPage() {
 
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
-        setMessage("Buka halaman ini melalui tautan undangan atau pemulihan email.");
+        setMessage("Buka halaman ini melalui tautan undangan, pemulihan email, atau login pertama Custom User.");
         return;
       }
 
@@ -102,10 +102,13 @@ export default function ResetPasswordPage() {
 
     setIsLoading(true);
     setMessage("");
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await supabase.auth.updateUser({
+      password,
+      data: { must_change_password: false },
+    });
 
     if (error) {
-      setMessage("Tautan tidak valid atau sudah kedaluwarsa. Minta tautan baru.");
+      setMessage("Kata sandi belum dapat diperbarui. Coba lagi atau minta tautan baru.");
       setIsLoading(false);
       return;
     }
@@ -173,7 +176,7 @@ export default function ResetPasswordPage() {
           </p>
 
           <button className="submit-button" type="submit" disabled={isLoading || !isSessionReady}>
-            {isLoading ? "Menyimpan..." : isSessionReady ? "Simpan kata sandi" : "Memeriksa tautan..."}
+            {isLoading ? "Menyimpan..." : isSessionReady ? "Simpan kata sandi" : "Memeriksa sesi..."}
           </button>
         </form>
       </section>
