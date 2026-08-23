@@ -9,6 +9,7 @@ const inspector = fs.readFileSync("src/app/admin/rps-inspector-panel.tsx", "utf8
 const entry = fs.readFileSync("src/app/dashboard-entry.tsx", "utf8");
 const routing = fs.readFileSync("src/app/admin/route-coordinator.tsx", "utf8");
 const reset = fs.readFileSync("supabase/migrations/20260824011000_reset_domain_data_keep_two_users.sql", "utf8");
+const truncateBlock = reset.match(/truncate table([\s\S]*?)restart identity cascade;/i)?.[1] ?? "";
 
 test("dashboard is intentionally reduced to one welcome surface", () => {
   assert.match(dashboard, /Selamat Datang, \{name\}/);
@@ -43,13 +44,13 @@ test("RPS inspectors preserve Level 2 and Level 4 concepts without simulated evi
 test("destructive reset preserves exactly two current identities and removes domain data", () => {
   assert.match(reset, /from auth\.users/);
   assert.match(reset, /auth_user_count <> 2/);
-  assert.match(reset, /public\.rps_documents/);
-  assert.match(reset, /public\.academic_programs/);
-  assert.match(reset, /public\.courses/);
-  assert.match(reset, /public\.audit_logs/);
+  assert.match(truncateBlock, /public\.rps_documents/);
+  assert.match(truncateBlock, /public\.academic_programs/);
+  assert.match(truncateBlock, /public\.courses/);
+  assert.match(truncateBlock, /public\.audit_logs/);
   assert.match(reset, /where slug <> 'informatika-undip'/);
-  assert.doesNotMatch(reset, /truncate table[\s\S]*public\.profiles/);
-  assert.doesNotMatch(reset, /truncate table[\s\S]*public\.platform_roles/);
-  assert.doesNotMatch(reset, /truncate table[\s\S]*public\.user_role_assignments/);
+  assert.doesNotMatch(truncateBlock, /public\.profiles/);
+  assert.doesNotMatch(truncateBlock, /public\.platform_roles/);
+  assert.doesNotMatch(truncateBlock, /public\.user_role_assignments/);
   assert.doesNotMatch(reset, /delete from auth\.users/);
 });
