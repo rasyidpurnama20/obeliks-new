@@ -99,5 +99,5 @@ test("bootstrap finalizer is authenticated and clears only the server-controlled
   assert.match(resetActions, /auth\.getUser\(\)/);
   assert.match(resetActions, /admin\.auth\.admin\.updateUserById\(user\.id/);
   assert.match(resetActions, /app_metadata: \{[\s\S]*\.\.\.user\.app_metadata,[\s\S]*bootstrap_password: false/);
-  assert.doesNotMatch(resetActions, /password:/);
+  assert.doesNotMatch(resetActions, /\bpassword\s*:/);
 });
