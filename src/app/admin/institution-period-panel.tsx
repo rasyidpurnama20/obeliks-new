@@ -19,6 +19,11 @@ function readActiveRole(fallback: string) {
   return document.querySelector<HTMLSelectElement>('select[aria-label="Peran aktif"]')?.value ?? fallback;
 }
 
+function isInstitutionPeriodRoute() {
+  const legacyHash = window.location.hash.replace(/^#/, "").split("/")[0];
+  return window.location.pathname === "/institusi-periode" || legacyHash === "institusi-periode";
+}
+
 export function InstitutionPeriodPanel({ initialRole }: InstitutionPeriodPanelProps) {
   const [visible, setVisible] = useState(false);
   const [role, setRole] = useState(initialRole);
@@ -30,17 +35,43 @@ export function InstitutionPeriodPanel({ initialRole }: InstitutionPeriodPanelPr
   const canAssign = role === "admin" || role === "kaprodi";
 
   useEffect(() => {
-    const sync = () => {
-      setVisible(window.location.hash.replace(/^#/, "").split("/")[0] === "institusi-periode");
-      setRole(readActiveRole(initialRole));
+    let disposed = false;
+    let frame = 0;
+    let roleSelect: HTMLSelectElement | null = null;
+    let roleHandler: (() => void) | null = null;
+
+    const syncRoute = () => setVisible((current) => {
+      const next = isInstitutionPeriodRoute();
+      return current === next ? current : next;
+    });
+    const syncRole = () => setRole((current) => {
+      const next = readActiveRole(initialRole);
+      return current === next ? current : next;
+    });
+
+    const bindRole = (attempt = 0) => {
+      if (disposed) return;
+      const select = document.querySelector<HTMLSelectElement>('select[aria-label="Peran aktif"]');
+      if (!select) {
+        if (attempt < 12) frame = window.requestAnimationFrame(() => bindRole(attempt + 1));
+        return;
+      }
+      roleSelect = select;
+      roleHandler = syncRole;
+      select.addEventListener("change", roleHandler);
+      syncRole();
     };
-    sync();
-    window.addEventListener("hashchange", sync);
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+
+    syncRoute();
+    bindRole();
+    window.addEventListener("hashchange", syncRoute);
+    window.addEventListener("popstate", syncRoute);
     return () => {
-      window.removeEventListener("hashchange", sync);
-      observer.disconnect();
+      disposed = true;
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("hashchange", syncRoute);
+      window.removeEventListener("popstate", syncRoute);
+      if (roleSelect && roleHandler) roleSelect.removeEventListener("change", roleHandler);
     };
   }, [initialRole]);
 
