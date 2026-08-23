@@ -96,7 +96,7 @@ export function LoginForm() {
       return;
     }
     if (platformRoleResult.data?.role === "superadmin" || (roleAssignmentsResult.data?.length ?? 0) > 0) {
-      if (signInData.user.user_metadata?.must_change_password === true) {
+      if (signInData.user.app_metadata?.bootstrap_password === true) {
         router.replace("/reset-password?required=1");
         router.refresh();
         return;
