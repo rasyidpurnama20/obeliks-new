@@ -17,8 +17,8 @@ import {
   rpsRecords,
   systemServices,
   teachingSubnavigation,
-  users,
 } from "@/lib/mvp/data";
+import type { ManagedUser } from "@/lib/admin/user-types";
 import type {
   AcademicWindow,
   IconName,
@@ -33,10 +33,14 @@ import type {
 } from "@/lib/mvp/types";
 import styles from "./dashboard.module.css";
 import { RpsAuthoringPanel } from "./rps-authoring-panel";
+import { UserManagementPanel } from "./user-management-panel";
 
 type DashboardAppProps = {
   email: string;
   displayName?: string | null;
+  initialRole: RoleId;
+  availableRoles: RoleId[];
+  initialManagedUsers: ManagedUser[];
   signOutAction: () => Promise<void>;
 };
 
@@ -145,8 +149,15 @@ function SectionHeading({ title, description, action }: { title: string; descrip
   );
 }
 
-export function DashboardApp({ email, displayName, signOutAction }: DashboardAppProps) {
-  const [role, setRole] = useState<RoleId>("admin");
+export function DashboardApp({
+  email,
+  displayName,
+  initialRole,
+  availableRoles,
+  initialManagedUsers,
+  signOutAction,
+}: DashboardAppProps) {
+  const [role, setRole] = useState<RoleId>(initialRole);
   const [screen, setScreen] = useState<NavigationItemId>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -163,9 +174,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
   const [lockModes, setLockModes] = useState<Record<string, LockMode>>(
     Object.fromEntries(academicWindows.map((window) => [window.id, window.lockMode])),
   );
-  const [userStatuses, setUserStatuses] = useState<Record<string, string>>(
-    Object.fromEntries(users.map((user) => [user.id, user.status])),
-  );
+  const [managedUsers, setManagedUsers] = useState(initialManagedUsers);
   const [aiMode, setAiMode] = useState<"rules" | "openai">("rules");
   const [settingsState, setSettingsState] = useState({ reminders: true, autoLock: true, digest: false, provenance: true });
 
@@ -271,6 +280,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
   }
 
   function changeRole(next: RoleId) {
+    if (!availableRoles.includes(next)) return;
     setRole(next);
     setScreen("dashboard");
     setWorkspaceCourse(null);
@@ -281,7 +291,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
     setSidebarOpen(false);
     setQuery("");
     window.history.replaceState(null, "", window.location.pathname);
-    notify(`Pratinjau ${getRoleDefinition(next).shortLabel} aktif.`);
+    notify(`Peran ${getRoleDefinition(next).shortLabel} aktif.`);
     focusPageHeading();
   }
 
@@ -381,6 +391,21 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
   }
 
   function renderDashboard() {
+    const invitedUserCount = managedUsers.filter((user) => user.status === "invited").length;
+    const dashboardActions = role === "admin"
+      ? dashboard.actions.map((action) => action.id === "adm-2"
+        ? {
+            ...action,
+            title: invitedUserCount
+              ? `${invitedUserCount} undangan belum diselesaikan`
+              : "Tidak ada undangan tertunda",
+            description: invitedUserCount
+              ? "Kirim ulang tautan onboarding atau arsipkan akun yang tidak lagi diperlukan."
+              : "Semua undangan akun sudah ditindaklanjuti.",
+          }
+        : action)
+      : dashboard.actions;
+
     return (
       <>
         <PageHeading eyebrow={dashboard.eyebrow} title={dashboard.title} description={dashboard.description} />
@@ -388,7 +413,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
         <section aria-label="Perlu tindakan Anda" className={styles.section}>
           <SectionHeading title="Perlu tindakan Anda" description="Urutan berdasarkan risiko, tenggat, dan ruang lingkup peran aktif." />
           <div className={styles.actionGrid}>
-            {dashboard.actions.map((action) => (
+            {dashboardActions.map((action) => (
               <article className={cx(styles.card, styles.actionCard, priorityClass(action.priority))} key={action.id}>
                 <div className={styles.actionTop}>
                   <StatusBadge label={action.dueLabel} tone={action.priority === "critical" ? "red" : action.priority === "high" ? "amber" : "blue"} />
@@ -406,10 +431,10 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
           {dashboard.metrics.map((metric) => (
             <article className={styles.metricCard} key={metric.id}>
               <div className={cx(styles.metricIcon, toneClass(metric.tone))}><Icon name={metric.icon} /></div>
-              <div className={styles.metricValue}>{metric.value}</div>
+              <div className={styles.metricValue}>{role === "admin" && metric.id === "users" ? managedUsers.filter((user) => user.status === "active").length : metric.value}</div>
               <div className={styles.metricLabel}>{metric.label}</div>
-              <p>{metric.detail}</p>
-              {metric.trend ? <span className={styles.trend}>{metric.trend}</span> : null}
+              <p>{role === "admin" && metric.id === "users" ? `${managedUsers.filter((user) => user.status === "invited").length} undangan menunggu` : metric.detail}</p>
+              {metric.trend && !(role === "admin" && metric.id === "users") ? <span className={styles.trend}>{metric.trend}</span> : null}
             </article>
           ))}
         </section>
@@ -509,27 +534,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
   }
 
   function renderUsers() {
-    const filteredUsers = users.filter((user) => `${user.name} ${user.email} ${user.unit} ${user.roles.join(" ")}`.toLowerCase().includes(query.toLowerCase()));
-    return (
-      <>
-        <PageHeading eyebrow="Identitas & otorisasi" title="Pengguna & Akses" description="Kelola akun, peran, lingkup, dan status akses tanpa mencampurkan penugasan akademik." action={<button className={styles.primaryButton} onClick={() => notify("Undangan baru disimulasikan; belum dikirim ke email.")} type="button"><Icon name="users" /> Undang pengguna</button>} />
-        <section className={styles.card}>
-          <div className={styles.toolbar}>
-            <label className={styles.searchField}><Icon name="users" /><span className={styles.srOnly}>Cari pengguna</span><input onChange={(event) => setQuery(event.target.value)} placeholder="Cari nama, email, role, atau unit…" type="search" value={query} /></label>
-            <span className={styles.resultCount}>{filteredUsers.length} pengguna</span>
-          </div>
-          <div className={styles.tableWrap}>
-            <table>
-              <thead><tr><th>Pengguna</th><th>Peran</th><th>Unit & penugasan</th><th>Status</th><th>Terakhir aktif</th><th><span className={styles.srOnly}>Tindakan</span></th></tr></thead>
-              <tbody>{filteredUsers.map((user) => {
-                const currentStatus = userStatuses[user.id];
-                return <tr key={user.id}><td><div className={styles.userCell}><span>{user.initials}</span><div><strong>{user.name}</strong><small>{user.email}</small></div></div></td><td><div className={styles.roleChips}>{user.roles.map((item) => <span key={item}>{getRoleDefinition(item).shortLabel}</span>)}</div></td><td><strong>{user.unit}</strong><small>{user.assignment}</small></td><td><StatusBadge label={currentStatus === "active" ? "Aktif" : currentStatus === "invited" ? "Diundang" : "Ditangguhkan"} tone={currentStatus === "active" ? "green" : currentStatus === "invited" ? "amber" : "red"} /></td><td>{user.lastActive}</td><td><button className={styles.kebabButton} onClick={() => { setUserStatuses((current) => ({ ...current, [user.id]: currentStatus === "suspended" ? "active" : "suspended" })); notify(`${user.name} ${currentStatus === "suspended" ? "diaktifkan" : "ditangguhkan"} pada pratinjau.`); }} type="button">{currentStatus === "suspended" ? "Aktifkan" : "Tangguhkan"}</button></td></tr>;
-              })}</tbody>
-            </table>
-          </div>
-        </section>
-      </>
-    );
+    return <UserManagementPanel users={managedUsers} query={query} onQueryChange={setQuery} onUsersChange={setManagedUsers} notify={notify} />;
   }
 
   function renderMonitoring() {
@@ -780,12 +785,12 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
           <button aria-controls="app-sidebar" aria-expanded={sidebarOpen} aria-label={sidebarOpen ? "Navigasi terbuka" : "Buka navigasi"} className={styles.menuButton} onClick={openMobileNavigation} ref={menuButtonRef} type="button">☰</button>
           <div className={styles.breadcrumb}><span>OBELIKS</span><i>/</i><strong>{screen === "pengajaran-saya" ? activeTeachingItem?.label ?? activeNav?.label : activeNav?.label ?? "Dashboard"}</strong></div>
           <div className={styles.topbarSpacer} />
-          <label className={styles.rolePreview}><span>Pratinjau peran</span><select aria-label="Pratinjau peran MVP" onChange={(event) => changeRole(event.target.value as RoleId)} value={role}>{roles.map((item) => <option key={item.id} value={item.id}>{item.shortLabel}</option>)}</select></label>
+          <label className={styles.rolePreview}><span>Peran aktif</span><select aria-label="Peran aktif" disabled={availableRoles.length === 1} onChange={(event) => changeRole(event.target.value as RoleId)} value={role}>{roles.filter((item) => availableRoles.includes(item.id)).map((item) => <option key={item.id} value={item.id}>{item.shortLabel}</option>)}</select></label>
           <button aria-label="Notifikasi" className={styles.iconButton} onClick={() => notify(`${dashboard.actions.length} tindakan memerlukan perhatian.`)} type="button"><Icon name="alert-triangle" /><i /></button>
           <span className={styles.avatar}>{(displayName || email).slice(0, 2).toUpperCase()}</span>
         </header>
         <main className={styles.mainContent} id="main-content">
-          <div className={styles.previewBanner}><Icon name="shield" /><div><strong>Mode pratinjau MVP · seluruh isi adalah data contoh</strong><span>Peran aktif: {roleDefinition.label}. Nama, angka, status, file, dan perubahan di layar bersifat sintetis/lokal—bukan otorisasi, transaksi, telemetri, atau data Supabase.</span></div><button onClick={() => notify("Lihat docs/DASHBOARD_MVP.md untuk batas dan rencana migrasi.")} type="button">Tentang MVP</button></div>
+          <div className={styles.previewBanner}><Icon name="shield" /><div><strong>Akun dan peran terhubung · modul akademik masih MVP</strong><span>Peran aktif: {roleDefinition.label}. Pengguna & Akses tersimpan di Supabase; kartu, kalender, RPS, keputusan, dan metrik akademik lain masih memakai data contoh sampai fase persistensi berikutnya.</span></div><button onClick={() => notify("Lihat docs/DASHBOARD_MVP.md untuk batas implementasi yang sedang aktif.")} type="button">Tentang MVP</button></div>
           {renderScreen()}
         </main>
       </div>

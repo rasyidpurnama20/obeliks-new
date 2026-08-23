@@ -60,6 +60,8 @@ Buka Vercel → project OBELIKS → **Settings** → **Environment Variables**. 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable/anon key)
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_SITE_URL` (origin HTTPS aplikasi, tanpa path)
+- `OBELIKS_ORGANIZATION_SLUG` (default `informatika-undip`)
 - variable parser/storage lain dari `.env.example`
 
 Lalu buka **Deployments** dan **Redeploy** deployment production terbaru bila variable baru ditambahkan setelah deploy. Jangan mengisi **Output Directory**; build mengikuti `vercel.json`.
@@ -70,5 +72,5 @@ Untuk Preview, jangan pasang service-role production. Preview dapat dibiarkan ta
 
 - `/` adalah login.
 - `/reset-password` hanya dipakai melalui tautan email.
-- `/admin` hanya dapat dibuka profil aktif dengan role `superadmin`.
+- `/admin` dapat dibuka profil aktif dengan role platform `superadmin` atau minimal satu `user_role_assignments`; operasi Pengguna & Akses tetap hanya untuk `superadmin` aktif.
 - Kata sandi diatur sendiri oleh pemilik akun dan tidak tersimpan di GitHub.

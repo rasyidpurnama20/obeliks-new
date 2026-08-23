@@ -79,9 +79,10 @@ Pertahankan data/config terpisah dari renderer. Hindari percabangan role yang te
 
 ## Batas implementasi saat ini
 
-- Route `/admin` masih hanya menerima `superadmin`; lima peran di dalam dashboard adalah preview fixture.
+- Route `/admin` menerima Admin platform aktif serta akun aktif yang memiliki `user_role_assignments`. Selector hanya menampilkan peran nyata milik session; Admin platform dilabelkan sebagai `Admin`.
+- Layar `Pengguna & Akses` sudah membaca dan memutasi Auth/profile/role Supabase melalui Server Action terotorisasi. Create memakai undangan email, update mencakup nama/peran/status, dan delete berupa arsip/offboarding yang menjaga riwayat. Kontrak operasionalnya ada di [`ADMIN_USER_MANAGEMENT.md`](./ADMIN_USER_MANAGEMENT.md).
 - Isi kartu, tabel, kalender, health service, audit, notifikasi, dan workflow belum dibaca atau disimpan ke database. Seluruh nama/angka/status pada modul adalah contoh sintetis; refresh mengembalikan state interaksi.
-- `platform_roles` baru mengenal `superadmin`; `organization_members` hanya satu role per pengguna/organisasi dan belum memiliki scope prodi maupun role mahasiswa.
+- `platform_roles` tetap khusus `superadmin`; role Kaprodi/GPM/Dosen/Mahasiswa tersimpan aditif di `user_role_assignments`. Role baru sengaja belum menjadi `organization_members` agar policy akademik lama tidak diwariskan secara bias.
 - Belum ada entitas periode akademik, jendela workflow, kelas penawaran, penugasan dosen, enrollment mahasiswa, review, publikasi, atau pengecualian lock.
 - Parser/AI memiliki endpoint fondasi, tetapi metrik dan tombol dashboard belum terhubung ke job nyata.
 - `audit_logs` sudah tersedia, tetapi feed MVP masih fixture.

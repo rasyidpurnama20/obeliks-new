@@ -29,6 +29,7 @@ File diunggah langsung dari browser ke Supabase Storage melalui signed upload UR
 
 - [`docs/DEPLOYMENT_FREE.md`](docs/DEPLOYMENT_FREE.md) — langkah setelah login Supabase dan Vercel.
 - [`docs/AUTH_SUPERADMIN.md`](docs/AUTH_SUPERADMIN.md) — aktivasi login dan superadmin pertama.
+- [`docs/ADMIN_USER_MANAGEMENT.md`](docs/ADMIN_USER_MANAGEMENT.md) — CRUD akun, role, lifecycle, audit, dan batas akses akademik.
 - [`docs/MVP_PHASE_1_3_SIMPLE.md`](docs/MVP_PHASE_1_3_SIMPLE.md) — rencana ringkas Data Master → Susun RPS → Review & Terbit.
 - [`docs/IF_UNDIP_PUBLIC_DATA.md`](docs/IF_UNDIP_PUBLIC_DATA.md) — snapshot dosen, Kurikulum 2024 OBE, CPL, dan batas data yang tidak boleh diasumsikan.
 - [`docs/SELF_HOSTING.md`](docs/SELF_HOSTING.md) — rencana pemindahan ke server sendiri.
