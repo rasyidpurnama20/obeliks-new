@@ -16,6 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run test:admin-users
       - run: npm run test:bootstrap
       - run: npm run test:if-undip-data
       - run: npm run test:rps-authoring

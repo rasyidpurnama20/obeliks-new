@@ -78,7 +78,7 @@ export default function Home() {
     setIsLoading(true);
     setNoticeType("neutral");
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     });
@@ -90,10 +90,23 @@ export default function Home() {
       return;
     }
 
-    const [{ data: profile }, { data: platformRole }] = await Promise.all([
-      supabase.from("profiles").select("status").maybeSingle(),
-      supabase.from("platform_roles").select("role").maybeSingle(),
+    const signedInUserId = signInData.user.id;
+    const [profileResult, platformRoleResult, roleAssignmentsResult] = await Promise.all([
+      supabase.from("profiles").select("status").eq("id", signedInUserId).maybeSingle(),
+      supabase.from("platform_roles").select("role").eq("user_id", signedInUserId).maybeSingle(),
+      supabase.from("user_role_assignments").select("role").eq("user_id", signedInUserId),
     ]);
+    if (profileResult.error || platformRoleResult.error || roleAssignmentsResult.error) {
+      await supabase.auth.signOut();
+      setNotice("Layanan otorisasi belum dapat memverifikasi akses. Coba lagi.");
+      setNoticeType("error");
+      setIsLoading(false);
+      return;
+    }
+
+    const profile = profileResult.data;
+    const platformRole = platformRoleResult.data;
+    const roleAssignments = roleAssignmentsResult.data;
 
     if (profile?.status !== "active") {
       await supabase.auth.signOut();
@@ -103,7 +116,7 @@ export default function Home() {
       return;
     }
 
-    if (platformRole?.role === "superadmin") {
+    if (platformRole?.role === "superadmin" || (roleAssignments?.length ?? 0) > 0) {
       router.replace("/admin");
       router.refresh();
       return;

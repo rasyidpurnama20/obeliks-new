@@ -22,6 +22,14 @@ export async function authenticateRequest(request: Request): Promise<{
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) throw new AccessError("invalid_access_token", 401);
 
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("status")
+    .eq("id", data.user.id)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if (profile?.status !== "active") throw new AccessError("account_inactive", 403);
+
   return { supabase, user: data.user };
 }
 
@@ -40,4 +48,3 @@ export async function assertOrganizationMember(
   if (error) throw error;
   if (!data) throw new AccessError("forbidden", 403);
 }
-

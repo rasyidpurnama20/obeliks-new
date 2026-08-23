@@ -9,6 +9,7 @@
     "build:standalone": "NEXT_OUTPUT=standalone next build",
     "start": "next start",
     "test:bootstrap": "node --test tests/bootstrap-site-url.test.mjs",
+    "test:admin-users": "node --no-warnings --experimental-strip-types --test tests/admin-user-management.test.mjs",
     "test:if-undip-data": "node --test tests/if-undip-seed-policy.test.mjs",
     "test:rps-authoring": "node --no-warnings --experimental-strip-types --test tests/rps-authoring-validation.test.mjs",
     "test:rps-template": "node --test tests/rps-template-contract.test.mjs",
