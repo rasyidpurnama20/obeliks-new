@@ -41,13 +41,14 @@ export async function saveRpsStudioData(input: {
       throw profileResult.error ?? platformResult.error ?? assignmentResult.error ?? documentResult.error;
     }
     if (profileResult.data?.status !== "active") return { ok: false, message: "Akun tidak aktif." };
-    if (!documentResult.data) return { ok: false, message: "RPS tidak ditemukan." };
+    const document = documentResult.data;
+    if (!document) return { ok: false, message: "RPS tidak ditemukan." };
 
     const isSuperadmin = platformResult.data?.role === "superadmin";
-    const assignment = (assignmentResult.data ?? []).find((row) => String(row.organization_id) === String(documentResult.data.organization_id));
+    const assignment = (assignmentResult.data ?? []).find((row) => String(row.organization_id) === String(document.organization_id));
     const canEdit = isSuperadmin || ["kaprodi", "dosen"].includes(String(assignment?.role));
     if (!canEdit) return { ok: false, message: "Peran aktif tidak memiliki hak mengubah isi RPS ini." };
-    if (documentResult.data.status === "approved" && !isSuperadmin) {
+    if (document.status === "approved" && !isSuperadmin) {
       return { ok: false, message: "RPS yang sudah disetujui tidak dapat diubah tanpa membuat versi baru." };
     }
 
