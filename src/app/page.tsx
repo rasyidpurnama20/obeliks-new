@@ -7,6 +7,10 @@ export default async function Home() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
+    if (user.app_metadata?.bootstrap_password === true) {
+      redirect("/reset-password?required=1");
+    }
+
     const [profileResult, platformRoleResult, roleAssignmentsResult] = await Promise.all([
       supabase.from("profiles").select("status").eq("id", user.id).maybeSingle(),
       supabase.from("platform_roles").select("role").eq("user_id", user.id).maybeSingle(),
