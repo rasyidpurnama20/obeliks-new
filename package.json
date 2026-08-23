@@ -14,6 +14,7 @@
     "test:navigation-shell": "node --no-warnings --experimental-strip-types --test tests/navigation-shell.test.mjs",
     "test:performance-security": "node --test tests/performance-security-shell.test.mjs",
     "test:institution-period": "node --test tests/institution-period-workspace.test.mjs",
+    "test:clean-workspaces": "node --test tests/clean-core-workspaces.test.mjs",
     "test:user-onboarding": "node --test tests/user-onboarding-modes.test.mjs",
     "test:if-undip-data": "node --test tests/if-undip-seed-policy.test.mjs",
     "test:rps-authoring": "node --no-warnings --experimental-strip-types --test tests/rps-authoring-validation.test.mjs",
