@@ -19,13 +19,20 @@ export function ImpersonationBanner({ target }: { target: ImpersonatedUserView }
     if (stopping) return;
     setStopping(true);
     setErrorMessage("");
-    const result = await stopSupportImpersonation();
-    if (!result.ok) {
-      setErrorMessage(result.message);
+    try {
+      const result = await stopSupportImpersonation();
+      if (!result.ok) {
+        setErrorMessage(result.message);
+        setStopping(false);
+        return;
+      }
+      // Replace instead of assign so browser Back does not revisit a stale
+      // impersonated page after the support cookie has been cleared.
+      window.location.replace("/admin");
+    } catch {
+      setErrorMessage("Gagal kembali ke Superadmin. Coba lagi; sesi akun target tidak pernah diambil alih.");
       setStopping(false);
-      return;
     }
-    window.location.assign("/admin");
   }
 
   return (
