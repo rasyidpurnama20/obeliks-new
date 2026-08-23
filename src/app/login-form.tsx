@@ -26,7 +26,7 @@ function getEmailError(value: string): string {
 
 function getPasswordError(value: string): string {
   if (!value) return "Kata sandi wajib diisi.";
-  if (value.length < 8) return "Kata sandi minimal 8 karakter.";
+  if (value.length < 7) return "Kata sandi minimal 7 karakter.";
   if (value.length > 128) return "Kata sandi terlalu panjang.";
   if (value !== value.trim()) return "Hapus spasi di awal atau akhir kata sandi.";
   return "";
@@ -96,6 +96,11 @@ export function LoginForm() {
       return;
     }
     if (platformRoleResult.data?.role === "superadmin" || (roleAssignmentsResult.data?.length ?? 0) > 0) {
+      if (signInData.user.user_metadata?.must_change_password === true) {
+        router.replace("/reset-password?required=1");
+        router.refresh();
+        return;
+      }
       router.replace("/dashboard");
       router.refresh();
       return;
@@ -139,7 +144,7 @@ export function LoginForm() {
           <div className="field-group">
             <label htmlFor="password">Kata sandi</label>
             <div className="password-field">
-              <input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" minLength={8} maxLength={128} value={password} aria-invalid={Boolean(passwordError)} aria-describedby="login-message" onBlur={() => setPasswordTouched(true)} disabled={isLoading} onChange={(event) => { setPassword(event.target.value); setNotice(""); setNoticeType("neutral"); }} onKeyDown={handleCapsLock} onKeyUp={handleCapsLock} />
+              <input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" minLength={7} maxLength={128} value={password} aria-invalid={Boolean(passwordError)} aria-describedby="login-message" onBlur={() => setPasswordTouched(true)} disabled={isLoading} onChange={(event) => { setPassword(event.target.value); setNotice(""); setNoticeType("neutral"); }} onKeyDown={handleCapsLock} onKeyUp={handleCapsLock} />
               <button className="password-toggle" type="button" disabled={isLoading} aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"} aria-pressed={showPassword} onClick={() => setShowPassword((visible) => !visible)}><EyeIcon hidden={showPassword} /></button>
             </div>
           </div>
