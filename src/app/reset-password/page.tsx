@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, hasSupabaseBrowserEnv } from "@/lib/supabase/client";
+import { completeBootstrapPasswordChange } from "./actions";
 
 function EyeIcon({ hidden }: { hidden: boolean }) {
   return hidden ? (
@@ -109,6 +110,13 @@ export default function ResetPasswordPage() {
 
     if (error) {
       setMessage("Kata sandi belum dapat diperbarui. Coba lagi atau minta tautan baru.");
+      setIsLoading(false);
+      return;
+    }
+
+    const finalization = await completeBootstrapPasswordChange();
+    if (!finalization.ok) {
+      setMessage(finalization.message);
       setIsLoading(false);
       return;
     }
