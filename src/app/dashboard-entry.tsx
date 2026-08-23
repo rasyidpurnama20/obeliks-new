@@ -8,6 +8,7 @@ import { InstitutionPeriodPanel } from "./admin/institution-period-panel";
 import { RouteCoordinator } from "./admin/route-coordinator";
 import { UserAccessControls } from "./admin/user-access-controls";
 import { UserAccessEnhancements } from "./admin/user-access-enhancements";
+import { UserFilterUnifier } from "./admin/user-filter-unifier";
 import { IMPERSONATION_COOKIE, type ImpersonatedUserView } from "@/lib/admin/impersonation";
 import type { ManagedUser } from "@/lib/admin/user-types";
 import { getManagedOrganization, getManagedTarget, loadManagedUsers } from "@/lib/admin/users-server";
@@ -100,6 +101,7 @@ export async function DashboardEntry({ initialScreen }: { initialScreen: Navigat
       <InstitutionPeriodPanel initialRole={effectiveRoles[0]} />
       {isSuperadmin && !impersonatedUser ? <UserAccessControls initialUsers={managedUsers} /> : null}
       {isSuperadmin && !impersonatedUser ? <UserAccessEnhancements users={managedUsers} /> : null}
+      {isSuperadmin && !impersonatedUser ? <UserFilterUnifier /> : null}
       {impersonatedUser ? <ImpersonationBanner target={impersonatedUser} /> : null}
     </>
   );
