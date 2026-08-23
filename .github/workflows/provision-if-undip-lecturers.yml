@@ -45,22 +45,13 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Check email-map secret
-        shell: bash
-        env:
-          LECTURER_EMAIL_MAP_JSON: ${{ secrets.LECTURER_EMAIL_MAP_JSON }}
-        run: |
-          if [ -z "$LECTURER_EMAIL_MAP_JSON" ]; then
-            echo "Add LECTURER_EMAIL_MAP_JSON to the Production environment secrets with all missing or corrected email mappings."
-            exit 1
-          fi
-
       - name: Check apply secrets and confirmation
         if: inputs.apply_changes == true
         shell: bash
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LECTURER_EMAIL_MAP_JSON: ${{ secrets.LECTURER_EMAIL_MAP_JSON }}
           LECTURER_INITIAL_PASSWORD: ${{ secrets.LECTURER_INITIAL_PASSWORD }}
           LECTURER_EMAILS_CONFIRMED: ${{ inputs.confirm_email_owners }}
         run: |
@@ -68,20 +59,17 @@ jobs:
             echo "Confirm the current mailbox owners before applying account changes."
             exit 1
           fi
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] || [ -z "$LECTURER_INITIAL_PASSWORD" ]; then
-            echo "Add SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and LECTURER_INITIAL_PASSWORD to Production environment secrets."
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] || [ -z "$LECTURER_EMAIL_MAP_JSON" ] || [ -z "$LECTURER_INITIAL_PASSWORD" ]; then
+            echo "Add SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, LECTURER_EMAIL_MAP_JSON, and LECTURER_INITIAL_PASSWORD to Production environment secrets."
             exit 1
           fi
 
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Validate lecturer account plan
+      - name: Validate public lecturer snapshot
         if: inputs.apply_changes == false
-        env:
-          LECTURER_EMAIL_MAP_JSON: ${{ secrets.LECTURER_EMAIL_MAP_JSON }}
-          LECTURER_ALLOWED_EMAIL_DOMAIN_SUFFIX: undip.ac.id
-        run: npm run seed:if-undip-lecturers
+        run: npm run test:if-undip-data
 
       - name: Stage lecturer accounts
         if: inputs.apply_changes == true
