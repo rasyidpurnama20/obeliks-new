@@ -26,11 +26,9 @@ export function ImpersonationBanner({ target }: { target: ImpersonatedUserView }
         setStopping(false);
         return;
       }
-      // Replace instead of assign so browser Back does not revisit a stale
-      // impersonated page after the support cookie has been cleared.
-      window.location.replace("/admin");
+      window.location.replace("/dashboard");
     } catch {
-      setErrorMessage("Gagal kembali ke Superadmin. Coba lagi; sesi akun target tidak pernah diambil alih.");
+      setErrorMessage("Koneksi terputus saat kembali ke Superadmin. Coba lagi.");
       setStopping(false);
     }
   }
