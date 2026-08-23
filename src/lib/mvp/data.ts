@@ -13,6 +13,7 @@ import type {
   RoleId,
   RpsRecord,
   SystemService,
+  TeachingSubnavigationItem,
   UserRecord,
 } from "./types";
 
@@ -144,6 +145,36 @@ export const navigation: NavigationSection[] = [
         roles: ["admin"],
       },
     ],
+  },
+];
+
+// Level 2 navigation is deliberately kept at one nested level. The entries
+// reuse the workspace state instead of introducing duplicate page routes.
+export const teachingSubnavigation: TeachingSubnavigationItem[] = [
+  {
+    id: "courses",
+    label: "Mata Kuliah Saya",
+    description: "Pilih ruang kerja pengajaran",
+  },
+  {
+    id: "rps",
+    label: "RPS & Alignment",
+    description: "Susun dan validasi RPS",
+  },
+  {
+    id: "pelaksanaan",
+    label: "Pelaksanaan",
+    description: "Realisasi dan bukti",
+  },
+  {
+    id: "evaluasi",
+    label: "Evaluasi",
+    description: "Capaian dan perbaikan",
+  },
+  {
+    id: "riwayat",
+    label: "Riwayat",
+    description: "Versi, review, keputusan",
   },
 ];
 

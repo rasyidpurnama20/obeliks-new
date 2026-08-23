@@ -16,6 +16,7 @@ import {
   roles,
   rpsRecords,
   systemServices,
+  teachingSubnavigation,
   users,
 } from "@/lib/mvp/data";
 import type {
@@ -25,11 +26,13 @@ import type {
   NavigationItemId,
   Priority,
   RoleId,
+  TeachingSubnavigationId,
   Tone,
   WorkflowStatus,
   WorkspaceTabId,
 } from "@/lib/mvp/types";
 import styles from "./dashboard.module.css";
+import { RpsAuthoringPanel } from "./rps-authoring-panel";
 
 type DashboardAppProps = {
   email: string;
@@ -150,6 +153,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
   const [statusFilter, setStatusFilter] = useState("all");
   const [workspaceCourse, setWorkspaceCourse] = useState<string | null>(null);
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTabId>("rps");
+  const [teachingView, setTeachingView] = useState<TeachingSubnavigationId>("courses");
   const [studentRps, setStudentRps] = useState<string | null>(null);
   const [monitoringRecord, setMonitoringRecord] = useState<string | null>(null);
   const [reviewDecisions, setReviewDecisions] = useState<Record<string, string>>({});
@@ -169,6 +173,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
   const roleDefinition = getRoleDefinition(role);
   const dashboard = roleDashboards[role];
   const activeNav = navSections.flatMap((section) => section.items).find((item) => item.id === screen);
+  const activeTeachingItem = teachingSubnavigation.find((item) => item.id === teachingView);
   const sidebarRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -182,16 +187,33 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
 
   useEffect(() => {
     const syncFromLocation = () => {
-      const requested = window.location.hash.replace(/^#/, "").split("/")[0] as NavigationItemId;
+      const [requestedSegment, courseSegment, teachingSegment] = window.location.hash.replace(/^#/, "").split("/");
+      const requested = requestedSegment as NavigationItemId;
       if (!requested) {
         setScreen("dashboard");
+        setWorkspaceCourse(null);
+        setTeachingView("courses");
         return;
       }
       const allowed = navSections.some((section) => section.items.some((item) => item.id === requested));
-      setScreen(allowed ? requested : "dashboard");
-      setWorkspaceCourse(null);
+      const target = allowed ? requested : "dashboard";
+      setScreen(target);
       setStudentRps(null);
       setMonitoringRecord(null);
+      if (target === "pengajaran-saya") {
+        const courseExists = courseOfferings.some((course) => course.id === courseSegment);
+        const requestedTeachingView = teachingSubnavigation.some((item) => item.id === teachingSegment)
+          ? teachingSegment as TeachingSubnavigationId
+          : courseExists
+            ? "rps"
+            : "courses";
+        setWorkspaceCourse(courseExists ? courseSegment : null);
+        setTeachingView(requestedTeachingView);
+        if (requestedTeachingView !== "courses") setWorkspaceTab(requestedTeachingView);
+      } else {
+        setWorkspaceCourse(null);
+        setTeachingView("courses");
+      }
     };
     syncFromLocation();
     window.addEventListener("popstate", syncFromLocation);
@@ -207,6 +229,26 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
     window.setTimeout(() => setToast(""), 2600);
   }
 
+  async function handleRpsFileSelected(file: File) {
+    const maximumBytes = 10 * 1024 * 1024;
+    if (!file.name.toLocaleLowerCase("id-ID").endsWith(".docx")) {
+      notify("Berkas ditolak: pilih dokumen .docx.");
+      return;
+    }
+    if (file.size === 0 || file.size > maximumBytes) {
+      notify("Berkas ditolak: ukuran harus lebih dari 0 dan maksimal 10 MB.");
+      return;
+    }
+    const signature = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+    const isZipContainer = signature[0] === 0x50 && signature[1] === 0x4b && signature[2] === 0x03 && signature[3] === 0x04;
+    if (!isZipContainer) {
+      notify("Berkas ditolak: signature kontainer DOCX tidak valid.");
+      return;
+    }
+    setUploadedFile(file.name);
+    notify(`${file.name} lolos pemeriksaan lokal awal; belum diunggah atau diproses.`);
+  }
+
   function focusPageHeading() {
     window.requestAnimationFrame(() => {
       document.querySelector<HTMLElement>("#main-content h1")?.focus();
@@ -218,6 +260,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
     const target = allowed ? next : "dashboard";
     setScreen(target);
     setWorkspaceCourse(null);
+    setTeachingView("courses");
     setStudentRps(null);
     setMonitoringRecord(null);
     setSidebarOpen(false);
@@ -234,6 +277,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
     setStudentRps(null);
     setMonitoringRecord(null);
     setWorkspaceTab("rps");
+    setTeachingView("courses");
     setSidebarOpen(false);
     setQuery("");
     window.history.replaceState(null, "", window.location.pathname);
@@ -243,13 +287,52 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
 
   function navigateFromHref(href: string, targetId?: string) {
     const target = href.replace(/^#/, "") as NavigationItemId;
+    if (target === "pengajaran-saya") {
+      const defaultTab: WorkspaceTabId = targetId === courseWorkspace.courseOfferingId ? "pelaksanaan" : "rps";
+      navigateTeaching(defaultTab, targetId ?? null);
+      return;
+    }
     navigate(target || "dashboard");
     if (target === "monitoring-rps" && targetId) setMonitoringRecord(targetId);
-    if (target === "pengajaran-saya" && targetId) {
-      setWorkspaceCourse(targetId);
-      setWorkspaceTab(targetId === courseWorkspace.courseOfferingId ? "pelaksanaan" : "rps");
-    }
     if (target === "rps-saya" && targetId) setStudentRps(targetId);
+  }
+
+  function navigateTeaching(next: TeachingSubnavigationId, courseId: string | null = workspaceCourse) {
+    const validCourseId = courseOfferings.some((course) => course.id === courseId) ? courseId : null;
+    setScreen("pengajaran-saya");
+    setTeachingView(next);
+    setStudentRps(null);
+    setMonitoringRecord(null);
+    setSidebarOpen(false);
+    setQuery("");
+    if (next === "courses") {
+      setWorkspaceCourse(null);
+      window.history.pushState(null, "", `${window.location.pathname}#pengajaran-saya`);
+    } else {
+      setWorkspaceCourse(validCourseId);
+      setWorkspaceTab(next);
+      window.history.pushState(null, "", `${window.location.pathname}#pengajaran-saya/${validCourseId ?? "pilih-mata-kuliah"}/${next}`);
+    }
+    focusPageHeading();
+  }
+
+  function openTeachingCourse(courseId: string, requestedTab?: WorkspaceTabId) {
+    const nextTab = requestedTab ?? (teachingView === "courses" ? "rps" : teachingView);
+    navigateTeaching(nextTab, courseId);
+  }
+
+  function getTeachingSubmenuStatus(id: TeachingSubnavigationId): { label?: string; tone: Tone } {
+    if (id === "courses") return { label: `${courseOfferings.slice(0, 3).length} kelas`, tone: "neutral" };
+    const course = courseOfferings.find((item) => item.id === workspaceCourse);
+    if (!course) return { label: "Pilih MK", tone: "neutral" };
+    if (id === "rps") return { label: `${course.rpsProgress}%`, tone: course.rpsProgress === 100 ? "green" : course.rpsProgress >= 80 ? "amber" : "red" };
+    if (id === "pelaksanaan") {
+      return course.id === courseWorkspace.courseOfferingId
+        ? { label: `${courseWorkspace.pelaksanaan.completedMeetings}/${courseWorkspace.pelaksanaan.totalMeetings}`, tone: "teal" }
+        : { label: `${course.deliveryProgress}%`, tone: "teal" };
+    }
+    if (id === "evaluasi") return course.evaluationProgress ? { label: `${course.evaluationProgress}%`, tone: "purple" } : { label: "Belum dibuka", tone: "amber" };
+    return { tone: "neutral" };
   }
 
   function openWorkflowTarget(code: string, rowId: string) {
@@ -521,10 +604,16 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
   function renderWorkspace() {
     const selected = courseOfferings.find((course) => course.id === workspaceCourse);
     if (!selected) {
+      const isChoosingForSubmenu = teachingView !== "courses";
       return (
         <>
-          <PageHeading eyebrow="Workspace dosen · Level 2 + Level 4" title="Pengajaran Saya" description="Hanya mata kuliah yang ditugaskan kepada persona Dosen ini; progres RPS, pelaksanaan, dan evaluasi dipisahkan." action={<label className={cx(styles.primaryButton, styles.fileButton)}><Icon name="file-text" /> Pilih berkas contoh<input accept=".doc,.docx,.zip" onChange={(event) => { const file = event.target.files?.[0]; if (file) { setUploadedFile(file.name); notify(`${file.name} dipilih; simulasi belum menjalankan atau mengunggah berkas.`); } }} type="file" /></label>} />
-          <div className={styles.courseGrid}>{courseOfferings.slice(0, 3).map((course) => <article className={styles.courseCard} key={course.id}><div className={styles.courseCardTop}><span className={styles.courseCode}>{course.code}</span><StatusBadge label={course.statusLabel} tone={course.status === "attention" ? "red" : course.status === "review" ? "amber" : "green"} /></div><h2>{course.name}</h2><p>Kelas {course.className} · {course.credits} SKS · {course.studentCount} mahasiswa</p><div className={styles.threeProgress}><Progress label="RPS" tone={course.rpsProgress === 100 ? "green" : "amber"} value={course.rpsProgress} /><Progress label="Pelaksanaan" tone="teal" value={course.deliveryProgress} /><Progress label="Evaluasi" tone="purple" value={course.evaluationProgress} /></div><div className={styles.courseNext}><span><small>Tindakan berikutnya</small><strong>{course.nextAction}</strong></span><StatusBadge label={course.dueLabel} tone={course.status === "attention" ? "red" : "blue"} /></div><button className={styles.primaryButton} onClick={() => { setWorkspaceCourse(course.id); setWorkspaceTab(course.id === courseWorkspace.courseOfferingId ? "pelaksanaan" : "rps"); }} type="button">Buka workspace <span aria-hidden="true">→</span></button></article>)}</div>
+          <PageHeading
+            eyebrow="Workspace dosen · Level 2 + Level 4"
+            title={isChoosingForSubmenu ? `Pilih mata kuliah untuk ${activeTeachingItem?.label ?? "workspace"}` : "Pengajaran Saya"}
+            description={isChoosingForSubmenu ? "Konteks mata kuliah wajib dipilih agar data RPS, pelaksanaan, evaluasi, dan riwayat tidak tercampur." : "Hanya mata kuliah yang ditugaskan kepada persona Dosen ini; progres RPS, pelaksanaan, dan evaluasi dipisahkan."}
+          />
+          {isChoosingForSubmenu ? <div className={styles.selectionNotice}><Icon name="shield" /><div><strong>Pilih mata kuliah terlebih dahulu</strong><span>Setelah dipilih, Anda langsung masuk ke submenu {activeTeachingItem?.label}.</span></div></div> : null}
+          <div className={styles.courseGrid}>{courseOfferings.slice(0, 3).map((course) => <article className={styles.courseCard} key={course.id}><div className={styles.courseCardTop}><span className={styles.courseCode}>{course.code}</span><StatusBadge label={course.statusLabel} tone={course.status === "attention" ? "red" : course.status === "review" ? "amber" : "green"} /></div><h2>{course.name}</h2><p>Kelas {course.className} · {course.credits} SKS · {course.studentCount} mahasiswa</p><div className={styles.threeProgress}><Progress label="RPS" tone={course.rpsProgress === 100 ? "green" : "amber"} value={course.rpsProgress} /><Progress label="Pelaksanaan" tone="teal" value={course.deliveryProgress} /><Progress label="Evaluasi" tone="purple" value={course.evaluationProgress} /></div><div className={styles.courseNext}><span><small>Tindakan berikutnya</small><strong>{course.nextAction}</strong></span><StatusBadge label={course.dueLabel} tone={course.status === "attention" ? "red" : "blue"} /></div><button className={styles.primaryButton} onClick={() => openTeachingCourse(course.id)} type="button">{isChoosingForSubmenu ? `Buka ${activeTeachingItem?.label}` : "Buka workspace"} <span aria-hidden="true">→</span></button></article>)}</div>
         </>
       );
     }
@@ -533,11 +622,11 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
       const effectiveRps = publicRpsDetails[selected.code];
       return (
         <>
-          <button className={styles.backButton} onClick={() => setWorkspaceCourse(null)} type="button">← Semua pengajaran</button>
+          <button className={styles.backButton} onClick={() => navigateTeaching("courses")} type="button">← Semua pengajaran</button>
           <PageHeading
-            eyebrow="Workspace dosen · Ringkasan mata kuliah"
+            eyebrow={`Workspace dosen · ${activeTeachingItem?.label ?? "Ringkasan mata kuliah"}`}
             title={`${selected.code} · ${selected.name}`}
-            description={`Kelas ${selected.className} · ${selected.credits} SKS · ${selected.studentCount} mahasiswa`}
+            description={`Kelas ${selected.className} · ${selected.credits} SKS · ${selected.studentCount} mahasiswa · konteks ${activeTeachingItem?.label ?? "workspace"}`}
             action={<StatusBadge label={selected.statusLabel} tone={selected.status === "attention" ? "red" : selected.status === "review" ? "amber" : "green"} />}
           />
           <section className={styles.metricGrid}>
@@ -547,7 +636,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
             <article className={styles.metricCard}><div className={cx(styles.metricIcon, toneClass("blue"))}><Icon name="book-open" /></div><div className={styles.metricValue}>{effectiveRps ? `v${effectiveRps.version}` : "—"}</div><div className={styles.metricLabel}>Versi efektif</div><p>{effectiveRps ? "Tersedia read-only untuk mahasiswa" : "Belum dipublikasikan"}</p></article>
           </section>
           <div className={styles.contentGrid}>
-            <section className={cx(styles.card, styles.spanTwo)}><SectionHeading title="Tindakan berikutnya" description="Fixture ringkas menjaga isi tetap sesuai mata kuliah; contoh workspace Level 2/4 lengkap tersedia pada IF306." /><h2>{selected.nextAction}</h2><p className={styles.privacyNote}>Aksi pada MVP ini hanya mendemonstrasikan alur dan belum mengubah dokumen di backend.</p><button className={styles.primaryButton} onClick={() => notify(`Simulasi—aksi ${selected.code} belum disimpan ke backend.`)} type="button">Simulasikan tindakan</button></section>
+            <section className={cx(styles.card, styles.spanTwo)}><SectionHeading title={activeTeachingItem?.label ?? "Tindakan berikutnya"} description={`Data detail ${activeTeachingItem?.label ?? "workspace"} untuk ${selected.code} belum dimodelkan; contoh lengkap tersedia pada IF306 tanpa mendaur ulang isi mata kuliah lain.`} /><h2>{selected.nextAction}</h2><p className={styles.privacyNote}>Aksi pada MVP ini hanya mendemonstrasikan alur dan belum mengubah dokumen di backend.</p><button className={styles.primaryButton} onClick={() => notify(`Simulasi—aksi ${selected.code} belum disimpan ke backend.`)} type="button">Simulasikan tindakan</button></section>
             <aside className={styles.card}><SectionHeading title="Batas fixture" /><p className={styles.privacyNote}>Konten detail unik untuk {selected.code} belum dimodelkan. Karena itu aplikasi tidak mendaur ulang CPMK atau bukti IF306 secara keliru.</p></aside>
           </div>
         </>
@@ -559,15 +648,18 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
     const achievedOutcomes = measuredOutcomes.filter((outcome) => (outcome.attainment ?? 0) >= (outcome.target ?? 0)).length;
     return (
       <>
-        <button className={styles.backButton} onClick={() => setWorkspaceCourse(null)} type="button">← Semua pengajaran</button>
-        <div className={styles.workspaceHeader}><div><div className={styles.workspaceTitleRow}><span className={styles.courseCode}>{selected.code}</span><StatusBadge label="RPS v3 · Menunggu Kaprodi" tone="amber" /></div><h1 tabIndex={-1}>{selected.name}</h1><p>Kelas {selected.className} · {selected.credits} SKS · {selected.program} · Pelaksanaan memakai versi efektif v2</p></div><div className={styles.workspaceActions}><button className={styles.secondaryButton} onClick={() => notify("Simulasi—perbandingan v2 ↔ v3 belum membuka diff persisten.")} type="button"><Icon name="history" /> Simulasikan diff</button><button className={styles.primaryButton} onClick={() => notify("Simulasi—perubahan belum disimpan ke backend.")} type="button">Simulasikan simpan</button></div></div>
-        <nav aria-label="Tahap pengajaran" className={styles.workspaceTabs}>{workspace.tabs.map((tab) => <button aria-current={workspaceTab === tab.id ? "page" : undefined} className={workspaceTab === tab.id ? styles.activeTab : undefined} key={tab.id} onClick={() => setWorkspaceTab(tab.id)} type="button"><span>{tab.label}{tab.badge ? <small>{tab.badge}</small> : null}</span><em>{tab.description}</em>{typeof tab.progress === "number" ? <Progress value={tab.progress} tone={tab.id === "rps" ? "green" : tab.id === "pelaksanaan" ? "teal" : "purple"} /> : null}</button>)}</nav>
-        {workspaceTab === "rps" ? (
-          <div className={styles.workspaceGrid}>
-            <section className={cx(styles.card, styles.spanTwo)}><SectionHeading title="Validation gate RPS" description={workspace.rps.validationSummary} action={<StatusBadge label={`${workspace.rps.readiness}% siap`} tone="green" />} /><div className={styles.checklist}>{workspace.rps.checklist.map((item) => <article key={item.id}><i className={cx(styles.checkIcon, toneClass(item.status === "done" ? "green" : item.status === "blocked" ? "red" : item.status === "warning" ? "amber" : "neutral"))}>{item.status === "done" ? "✓" : item.status === "blocked" ? "!" : "•"}</i><div><strong>{item.label}</strong><p>{item.detail}</p></div>{item.actionLabel ? <button className={styles.textButton} onClick={() => notify(`${item.label} dibuka pada editor RPS.`)} type="button">{item.actionLabel}</button> : null}</article>)}</div></section>
-            <aside className={styles.stack}><section className={cx(styles.card, styles.aiCard)}><div className={styles.aiIcon}><Icon name="sparkles" size={22} /></div><h2>OBE Copilot</h2><p>Alignment diperiksa dengan rules terlebih dahulu; saran AI selalu memerlukan persetujuan dosen.</p><button className={styles.primaryButton} onClick={() => notify("Simulasi—2 saran contoh ditemukan dan belum diterapkan.")} type="button">Simulasikan pemeriksaan</button></section><section className={styles.card}><SectionHeading title="Sumber dokumen" /><p className={styles.sourceFile}><Icon name="file-text" /> {uploadedFile}</p><small>Berkas contoh/dipilih lokal · belum diunggah atau diproses</small></section></aside>
-            <section className={cx(styles.card, styles.fullWidth)}><SectionHeading title="CPL → CPMK → bukti asesmen" description="Constructive alignment dari prototipe Level 2, disederhanakan untuk MVP." /><div className={styles.outcomeGrid}>{workspace.rps.outcomes.map((outcome, index) => <article key={outcome.code}><span>{outcome.code}</span><strong>{outcome.statement}</strong><small>CPL-{String(index + 1).padStart(2, "0")} · {index % 2 ? "Proyek" : "Studi kasus"}</small></article>)}</div></section>
+        <button className={styles.backButton} onClick={() => navigateTeaching("courses")} type="button">← Semua pengajaran</button>
+        <div className={styles.workspaceHeader}>
+          <div><div className={styles.workspaceTitleRow}><span className={styles.courseCode}>{selected.code}</span><StatusBadge label="RPS v3 · Menunggu Kaprodi" tone="amber" /></div><h1 tabIndex={-1}>{selected.name}</h1><p>Kelas {selected.className} · {selected.credits} SKS · {selected.program} · Pelaksanaan memakai versi efektif v2</p></div>
+          <div className={styles.workspaceActions}>
+            {workspaceTab === "rps" ? <><button className={styles.secondaryButton} onClick={() => notify("Simulasi—perbandingan v2 ↔ v3 belum membuka diff persisten.")} type="button"><Icon name="history" /> Simulasikan diff</button><button className={styles.primaryButton} onClick={() => notify("Simulasi—perubahan belum disimpan ke backend.")} type="button">Simulasikan simpan</button></> : null}
+            {workspaceTab === "pelaksanaan" ? <StatusBadge label="Versi efektif v2" tone="teal" /> : null}
+            {workspaceTab === "evaluasi" ? <StatusBadge label="Contoh historis · read-only" tone="blue" /> : null}
+            {workspaceTab === "riwayat" ? <StatusBadge label="Jejak immutable" tone="neutral" /> : null}
           </div>
+        </div>
+        {workspaceTab === "rps" ? (
+          <RpsAuthoringPanel onFileSelected={handleRpsFileSelected} onNotify={notify} uploadedFile={uploadedFile} />
         ) : null}
         {workspaceTab === "pelaksanaan" ? (
           <div className={styles.workspaceGrid}><section className={cx(styles.card, styles.fullWidth)}><SectionHeading title="Realisasi perkuliahan · versi efektif v2" description={`${workspace.pelaksanaan.completedMeetings} dari ${workspace.pelaksanaan.totalMeetings} pertemuan tercatat · ${workspace.pelaksanaan.deviationCount} deviasi rencana`} action={<button className={styles.primaryButton} onClick={() => notify("Simulasi—form realisasi belum disimpan ke backend.")} type="button">Simulasikan catatan</button>} /><div className={styles.tableWrap}><table><thead><tr><th>Minggu</th><th>Rencana RPS</th><th>Realisasi</th><th>Bukti</th><th>Status</th></tr></thead><tbody>{workspace.pelaksanaan.meetings.map((meeting) => <tr key={meeting.week}><td><strong>{meeting.week}</strong></td><td>{meeting.plan}</td><td>{meeting.realization}</td><td>{meeting.evidence}</td><td><StatusBadge label={meeting.status === "done" ? "Sesuai" : meeting.status === "changed" ? "Ada deviasi" : "Akan datang"} tone={meeting.status === "done" ? "green" : meeting.status === "changed" ? "amber" : "neutral"} /></td></tr>)}</tbody></table></div></section></div>
@@ -633,7 +725,50 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
       <aside aria-hidden={isMobile && !sidebarOpen ? true : undefined} className={cx(styles.sidebar, sidebarOpen && styles.sidebarOpen)} id="app-sidebar" inert={isMobile && !sidebarOpen ? true : undefined} onKeyDown={handleSidebarKeyDown} ref={sidebarRef}>
         <div className={styles.brand}><div className={styles.brandMark}>OBE</div><div><strong>OBELIKS APPS</strong><span>Platform Integrasi RPS</span></div></div>
         <nav aria-label="Navigasi utama" className={styles.navigation}>
-          {navSections.map((section) => <div className={styles.navSection} key={section.id}><p>{section.label}</p>{section.items.map((item) => <button aria-current={screen === item.id ? "page" : undefined} className={cx(styles.navItem, screen === item.id && styles.navItemActive)} key={item.id} onClick={() => navigate(item.id)} title={item.description} type="button"><Icon name={item.icon} /><span>{item.label}</span>{item.badge ? <em>{item.badge}</em> : null}</button>)}</div>)}
+          {navSections.map((section) => (
+            <div className={styles.navSection} key={section.id}>
+              <p>{section.label}</p>
+              {section.items.map((item) => item.id === "pengajaran-saya" && role === "dosen" ? (
+                <div className={styles.navTree} key={item.id}>
+                  <button
+                    aria-controls="pengajaran-saya-submenu"
+                    aria-expanded="true"
+                    className={cx(styles.navItem, screen === item.id && styles.navParentActive)}
+                    onClick={() => navigateTeaching("courses")}
+                    title={item.description}
+                    type="button"
+                  >
+                    <Icon name={item.icon} />
+                    <span>{item.label}</span>
+                    <i aria-hidden="true" className={styles.navChevron}>⌄</i>
+                  </button>
+                  <ul className={styles.navSubmenu} id="pengajaran-saya-submenu">
+                    {teachingSubnavigation.map((subitem) => {
+                      const isActive = screen === "pengajaran-saya" && teachingView === subitem.id;
+                      const status = getTeachingSubmenuStatus(subitem.id);
+                      return (
+                        <li key={subitem.id}>
+                          <button
+                            aria-current={isActive ? "page" : undefined}
+                            className={cx(styles.navSubitem, isActive && styles.navSubitemActive)}
+                            onClick={() => navigateTeaching(subitem.id)}
+                            title={subitem.description}
+                            type="button"
+                          >
+                            <i aria-hidden="true" className={cx(styles.navStatusDot, toneClass(status.tone))} />
+                            <span>{subitem.label}</span>
+                            {status.label ? <em>{status.label}</em> : null}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ) : (
+                <button aria-current={screen === item.id ? "page" : undefined} className={cx(styles.navItem, screen === item.id && styles.navItemActive)} key={item.id} onClick={() => navigate(item.id)} title={item.description} type="button"><Icon name={item.icon} /><span>{item.label}</span>{item.badge ? <em>{item.badge}</em> : null}</button>
+              ))}
+            </div>
+          ))}
         </nav>
         <div className={styles.sidebarSpacer} />
         <div className={styles.sidebarContext}><span>Ruang kerja aktif</span><strong>{roleDefinition.scope}</strong><small>Gasal 2026/2027</small></div>
@@ -643,7 +778,7 @@ export function DashboardApp({ email, displayName, signOutAction }: DashboardApp
       <div className={styles.mainShell}>
         <header className={styles.topbar}>
           <button aria-controls="app-sidebar" aria-expanded={sidebarOpen} aria-label={sidebarOpen ? "Navigasi terbuka" : "Buka navigasi"} className={styles.menuButton} onClick={openMobileNavigation} ref={menuButtonRef} type="button">☰</button>
-          <div className={styles.breadcrumb}><span>OBELIKS</span><i>/</i><strong>{activeNav?.label ?? "Dashboard"}</strong></div>
+          <div className={styles.breadcrumb}><span>OBELIKS</span><i>/</i><strong>{screen === "pengajaran-saya" ? activeTeachingItem?.label ?? activeNav?.label : activeNav?.label ?? "Dashboard"}</strong></div>
           <div className={styles.topbarSpacer} />
           <label className={styles.rolePreview}><span>Pratinjau peran</span><select aria-label="Pratinjau peran MVP" onChange={(event) => changeRole(event.target.value as RoleId)} value={role}>{roles.map((item) => <option key={item.id} value={item.id}>{item.shortLabel}</option>)}</select></label>
           <button aria-label="Notifikasi" className={styles.iconButton} onClick={() => notify(`${dashboard.actions.length} tindakan memerlukan perhatian.`)} type="button"><Icon name="alert-triangle" /><i /></button>

@@ -9,7 +9,7 @@ Keempat prototipe tidak disalin sebagai HTML monolitik. Bahasa visual dan contoh
 | Sumber | Yang dimanfaatkan | Modul MVP |
 |---|---|---|
 | `rps-obe-studio-prototype.html` | Shell modern, upload-first, pipeline, saran AI dengan persetujuan, validation gate, dan versi | Fondasi visual dashboard, contoh sumber dokumen, `Pengajaran Saya > RPS`, `AI & Parser` |
-| `rps-obe-level2.html` | Struktur outcome dan quality inspector | Sampling CPL → CPMK → bukti serta validation checklist pada penyusunan RPS |
+| `rps-obe-level2.html` | Sidebar berjenjang satu level, struktur outcome, alignment, asesmen, rencana mingguan, dan quality inspector | Submenu Dosen serta enam langkah `RPS & Alignment` dengan validation gate rules-only |
 | `rps-obe-level3.html` | Health score, coverage, gap, dan rekomendasi | Sampling insight kurikulum pada `Monitoring RPS` untuk Admin/Kaprodi/GPM |
 | `rps-obe-level4-fixed.html` | Bukti pelaksanaan, ketercapaian outcome, dan corrective action | Jurnal pelaksanaan aktif serta contoh evaluasi historis read-only |
 
@@ -22,7 +22,9 @@ Satu shell menyediakan permukaan inti berikut dengan fixture terpusat:
 - Dashboard berbeda untuk Admin, Kaprodi, GPM, Dosen, dan Mahasiswa.
 - Sidebar adaptif: `Dashboard`, `Institusi & Periode`, `Pengguna & Akses`, `Monitoring RPS`, `Pengajaran Saya`, `RPS Saya`, serta grup sistem `AI & Parser`, `Audit Log`, dan `Pengaturan`.
 - Ringkasan periode dan penguncian, penugasan, pengguna, status workflow RPS, layanan parser/AI, dan audit.
-- Workspace mata kuliah dengan jalur terpisah untuk `RPS`, `Pelaksanaan`, `Evaluasi`, dan `Riwayat`.
+- `Pengajaran Saya` untuk Dosen selalu membuka submenu `Mata Kuliah Saya`, `RPS & Alignment`, `Pelaksanaan`, `Evaluasi`, dan `Riwayat`; konteks mata kuliah wajib dipilih sebelum membuka tahap.
+- Workspace mata kuliah dengan jalur terpisah untuk `RPS`, `Pelaksanaan`, `Evaluasi`, dan `Riwayat`, termasuk deep-link `#pengajaran-saya/{courseOfferingId}/{tahap}`.
+- Template DOCX resmi dapat diunduh langsung; checksum, urutan bagian, policy dependency, dan gate validasinya berada dalam manifest berversi.
 - Tampilan mahasiswa read-only untuk RPS terbit.
 - Preview peran, navigasi antarmodul, filter, tab, toggle, dan umpan balik interaksi sederhana.
 - Layout responsif yang mempertahankan bahasa visual Studio.
@@ -63,9 +65,12 @@ Kolom `rps_documents.status` saat ini mencampur status mesin (`queued`, `parsing
 |---|---|
 | `src/app/admin/page.tsx` | Boundary server untuk autentikasi, profil, dan role nyata. Muat data awal di sini atau lewat service server-side; jangan percaya role dari client. |
 | `src/app/admin/dashboard-app.tsx` | Komposisi UI serta state preview/navigasi. Saat modul mendapat backend nyata, ekstrak layar fitur tanpa memindahkan aturan otorisasi ke client. |
+| `src/app/admin/rps-authoring-panel.tsx` | Enam langkah Level 2, unduhan template, pemeriksaan file lokal awal, serta inspector rules-only. |
 | `src/app/admin/dashboard.module.css` | Token visual, shell, komponen, dan breakpoint. Ubah tema dari token terlebih dahulu agar layar tetap konsisten. |
 | `src/lib/mvp/types.ts` | Kontrak role, navigasi, metrik, status, dan fixture. Tambahkan tipe domain di sini sebelum menambah bentuk data baru. |
 | `src/lib/mvp/data.ts` | Satu sumber fixture, konfigurasi peran/menu, status processing, serta proyeksi RPS publik. Ganti bertahap dengan adapter query tanpa mengubah kontrak tampilan. |
+| `src/lib/mvp/rps-authoring.ts` | Contoh data kanonik dan validator deterministik yang fail closed untuk identity, key, relasi, coverage, bobot, kebijakan pertemuan, referensi, dan pemisahan aktor. |
+| `src/lib/rps/template-manifest.{json,ts}` | Kontrak immutable format DOCX, mapping bagian, gate workflow, policy dependency, dan batas keputusan AI/manusia. |
 | `src/app/admin/actions.ts` | Aksi server; saat ini hanya keluar. Tambahkan command bisnis tervalidasi dan tercatat audit, bukan mutasi langsung dari komponen. |
 | `src/app/api/uploads/sign`, `src/app/api/documents/parse`, `src/app/api/ai/extract` | Fondasi upload, parser, dan AI yang nanti dihubungkan ke workspace RPS. |
 | `supabase/migrations/` | Setiap perubahan role, periode, assignment, workflow, versi, review, dan RLS harus berupa migration baru; jangan mengubah migration lama yang sudah diterapkan. |
@@ -81,7 +86,8 @@ Pertahankan data/config terpisah dari renderer. Hindari percabangan role yang te
 - Parser/AI memiliki endpoint fondasi, tetapi metrik dan tombol dashboard belum terhubung ke job nyata.
 - `audit_logs` sudah tersedia, tetapi feed MVP masih fixture.
 - IF306 adalah contoh workspace Level 2/4 lengkap; mata kuliah lain menampilkan ringkasan yang konsisten dan sengaja tidak mendaur ulang CPMK/bukti IF306.
-- Validasi, rekomendasi, attainment, ekspor, diff versi, review, pengesahan, dan corrective action masih representasi/simulasi UX, bukan transaksi persisten. Evaluasi yang tampil merupakan fixture historis read-only karena jendela periode aktif belum dibuka.
+- Validasi struktur RPS pada contoh IF306 sudah dihitung deterministik di client dan memiliki negative unit test, tetapi belum menjadi transaksi persisten. Rekomendasi, attainment, ekspor terisi, diff versi, review, pengesahan, dan corrective action masih representasi/simulasi UX. Evaluasi yang tampil merupakan fixture historis read-only karena jendela periode aktif belum dibuka.
+- Template DOCX kosong tersaji sebagai aset publik byte-for-byte; file RPS yang dipilih pengguna hanya diperiksa ekstensi, ukuran, dan signature ZIP secara lokal, lalu tidak diunggah atau diproses.
 - Belum ada RLS per kapabilitas dan belum ada perlindungan konflik seperti self-review/self-approval.
 
 ## Checklist validasi PR
@@ -91,6 +97,8 @@ Pertahankan data/config terpisah dari renderer. Hindari percabangan role yang te
 - Pergantian preview selalu mengatur ulang layar ke menu yang sah bagi peran tersebut.
 - Menu Admin/Kaprodi/GPM/Dosen/Mahasiswa sesuai matriks kapabilitas; menu sistem tidak bocor ke non-Admin.
 - Tiga progres `RPS`, `Pelaksanaan`, dan `Evaluasi` tidak digabung menjadi satu status.
+- Submenu Dosen tetap terbuka, hanya child aktif memakai `aria-current`, dan deep-link/back-forward mempertahankan course + tahap yang valid.
+- Checksum template publik sama dengan manifest/sumber; perubahan byte, urutan bagian, default angka universal, atau pelonggaran batas AI/human decision menggagalkan test kontrak.
 - Semua screen, filter, tab, toggle, keputusan lokal, dan tombol simulasi tidak memicu error console/hydration.
 - Navigasi keyboard, focus visible, label kontrol, kontras status, reduced motion, tabel overflow, dan drawer mobile diperiksa.
 - Uji lebar minimal 360 px, tablet, desktop, serta zoom 200%; tidak ada aksi utama yang hilang.
