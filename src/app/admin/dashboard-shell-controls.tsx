@@ -14,6 +14,7 @@ type ShellControlsProps = {
 };
 
 type OpenPanel = "workspace" | "account" | "notifications" | "search" | null;
+type RoleOption = { value: string; label: string };
 type SearchItem = {
   id: string;
   type: "Menu" | "Mata kuliah" | "RPS" | "Pengguna";
@@ -35,6 +36,15 @@ function roleForValue(value: string): RoleId {
   return validRoles.has(value as RoleId) ? value as RoleId : "admin";
 }
 
+function readRoleOptions(select: HTMLSelectElement): RoleOption[] {
+  return [...select.options].map((option) => ({ value: option.value, label: option.text }));
+}
+
+function sameRoleOptions(left: RoleOption[], right: RoleOption[]) {
+  return left.length === right.length
+    && left.every((item, index) => item.value === right[index]?.value && item.label === right[index]?.label);
+}
+
 function notificationActions(role: RoleId, managedUsers: ManagedUser[]) {
   const dashboard = roleDashboards[role];
   if (role !== "admin") return dashboard.actions;
@@ -53,12 +63,22 @@ function actionPath(action: ActionItem) {
   return pathForScreen(screen);
 }
 
+function navigateClient(path: string, replace = false) {
+  const target = new URL(path, window.location.origin);
+  if (target.origin !== window.location.origin) return;
+  const next = `${target.pathname}${target.search}${target.hash}`;
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (replace) window.history.replaceState(null, "", next);
+  else if (current !== next) window.history.pushState(null, "", next);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
 export function DashboardShellControls({ displayName, email, managedUsers = [] }: ShellControlsProps) {
   const [mounted, setMounted] = useState(false);
   const [sidebarHost, setSidebarHost] = useState<HTMLElement | null>(null);
   const [headerHost, setHeaderHost] = useState<HTMLElement | null>(null);
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
-  const [roleOptions, setRoleOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [roleOptions, setRoleOptions] = useState<RoleOption[]>([]);
   const [activeRole, setActiveRole] = useState<RoleId>("admin");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
@@ -69,16 +89,38 @@ export function DashboardShellControls({ displayName, email, managedUsers = [] }
     setSidebarHost(document.querySelector<HTMLElement>("aside"));
     setHeaderHost(document.querySelector<HTMLElement>("header"));
 
-    const sync = () => {
-      const select = findRoleSelect();
-      if (!select) return;
-      setActiveRole(roleForValue(select.value));
-      setRoleOptions([...select.options].map((option) => ({ value: option.value, label: option.text })));
+    let disposed = false;
+    let frame = 0;
+    let boundSelect: HTMLSelectElement | null = null;
+    let boundHandler: (() => void) | null = null;
+
+    const sync = (select: HTMLSelectElement) => {
+      const nextRole = roleForValue(select.value);
+      const nextOptions = readRoleOptions(select);
+      setActiveRole((current) => current === nextRole ? current : nextRole);
+      setRoleOptions((current) => sameRoleOptions(current, nextOptions) ? current : nextOptions);
     };
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-    return () => observer.disconnect();
+
+    const bind = (attempt = 0) => {
+      if (disposed) return;
+      const select = findRoleSelect();
+      if (!select) {
+        if (attempt < 12) frame = window.requestAnimationFrame(() => bind(attempt + 1));
+        return;
+      }
+      const handler = () => sync(select);
+      boundSelect = select;
+      boundHandler = handler;
+      sync(select);
+      select.addEventListener("change", handler);
+    };
+
+    bind();
+    return () => {
+      disposed = true;
+      if (frame) window.cancelAnimationFrame(frame);
+      if (boundSelect && boundHandler) boundSelect.removeEventListener("change", boundHandler);
+    };
   }, []);
 
   useEffect(() => {
@@ -170,13 +212,13 @@ export function DashboardShellControls({ displayName, email, managedUsers = [] }
     select.dispatchEvent(new Event("change", { bubbles: true }));
     setActiveRole(roleForValue(value));
     setOpenPanel(null);
-    window.history.replaceState(null, "", "/dashboard");
+    navigateClient("/dashboard", true);
   }
 
   function navigateTo(path: string) {
     setOpenPanel(null);
     setSearchQuery("");
-    window.location.assign(path);
+    navigateClient(path);
   }
 
   function logout() {
@@ -261,7 +303,7 @@ export function DashboardShellControls({ displayName, email, managedUsers = [] }
         </button>
         {openPanel === "notifications" ? <div className="obe-popover obe-notification-popover">
           <div className="obe-notification-head"><strong>Notifikasi</strong><small>{notifications.length} perlu tindakan</small></div>
-          {notifications.length ? notifications.map((item, index) => <button className="obe-notification-item" key={item.id} onClick={() => navigateTo(actionPath(item))} type="button"><i className={item.priority === "critical" ? "critical" : item.priority === "high" ? "warning" : "info"} /><span><strong>{item.title}</strong><small>{item.context} · {item.dueLabel}</small></span><b>→</b></button>) : <p className="obe-empty">Tidak ada tindakan baru.</p>}
+          {notifications.length ? notifications.map((item) => <button className="obe-notification-item" key={item.id} onClick={() => navigateTo(actionPath(item))} type="button"><i className={item.priority === "critical" ? "critical" : item.priority === "high" ? "warning" : "info"} /><span><strong>{item.title}</strong><small>{item.context} · {item.dueLabel}</small></span><b>→</b></button>) : <p className="obe-empty">Tidak ada tindakan baru.</p>}
         </div> : null}
       </div>
     </div>, headerHost) : null;
