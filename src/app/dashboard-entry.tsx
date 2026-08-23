@@ -5,6 +5,9 @@ import { DashboardApp } from "./admin/dashboard-app";
 import { DashboardShellControls } from "./admin/dashboard-shell-controls";
 import { ImpersonationBanner } from "./admin/impersonation-banner";
 import { InstitutionPeriodPanel } from "./admin/institution-period-panel";
+import { MinimalDashboardPanel } from "./admin/minimal-dashboard-panel";
+import { MonitoringRpsPanel } from "./admin/monitoring-rps-panel";
+import { RpsInspectorPanel } from "./admin/rps-inspector-panel";
 import { RouteCoordinator } from "./admin/route-coordinator";
 import { UserAccessControls } from "./admin/user-access-controls";
 import { UserAccessEnhancements } from "./admin/user-access-enhancements";
@@ -103,7 +106,10 @@ export async function DashboardEntry({ initialScreen }: { initialScreen: Navigat
         managedUsers={impersonatedUser ? [] : managedUsers}
       />
       <WorkspaceSelectorCleaner />
+      <MinimalDashboardPanel displayName={effectiveDisplayName} email={effectiveEmail} />
       <InstitutionPeriodPanel initialRole={initialRole} />
+      <MonitoringRpsPanel />
+      <RpsInspectorPanel />
       {isSuperadmin && !impersonatedUser ? <UserAccessControls initialUsers={managedUsers} /> : null}
       {isSuperadmin && !impersonatedUser ? <UserAccessEnhancements users={managedUsers} /> : null}
       {isSuperadmin && !impersonatedUser ? <UserFilterUnifier /> : null}
