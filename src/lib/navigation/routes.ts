@@ -20,7 +20,10 @@ export function pathForScreen(screen: NavigationItemId) {
 
 export function screenFromPathname(pathname: string): NavigationItemId | null {
   const normalized = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
-  return dashboardScreens.find((screen) => dashboardRouteByScreen[screen] === normalized) ?? null;
+  return dashboardScreens.find((screen) => {
+    const route = dashboardRouteByScreen[screen];
+    return normalized === route || normalized.startsWith(`${route}/`);
+  }) ?? null;
 }
 
 export function screenFromHref(href: string): NavigationItemId {

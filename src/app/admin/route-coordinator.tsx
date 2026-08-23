@@ -31,7 +31,12 @@ function activateScreen(screen: NavigationItemId, replaceAfter = true) {
   if (!button) return;
   button.click();
   if (replaceAfter) {
-    window.requestAnimationFrame(() => window.history.replaceState(null, "", pathForScreen(screen)));
+    const basePath = pathForScreen(screen);
+    const currentPath = window.location.pathname.length > 1 ? window.location.pathname.replace(/\/$/, "") : window.location.pathname;
+    const preserveNestedPath = currentPath.startsWith(`${basePath}/`);
+    if (!preserveNestedPath) {
+      window.requestAnimationFrame(() => window.history.replaceState(null, "", basePath));
+    }
   }
 }
 
