@@ -4,6 +4,7 @@ import { signOut } from "./actions";
 import { DashboardApp } from "./dashboard-app";
 import { DashboardShellControls } from "./dashboard-shell-controls";
 import { InstitutionPeriodPanel } from "./institution-period-panel";
+import { UserAccessControls } from "./user-access-controls";
 import type { ManagedUser } from "@/lib/admin/user-types";
 import type { RoleId } from "@/lib/mvp/types";
 import { getManagedOrganization, loadManagedUsers } from "@/lib/admin/users-server";
@@ -66,6 +67,7 @@ export default async function AdminPage() {
       />
       <DashboardShellControls displayName={profile.display_name} email={email} />
       <InstitutionPeriodPanel initialRole={availableRoles[0]} />
+      <UserAccessControls initialUsers={managedUsers} />
     </>
   );
 }
