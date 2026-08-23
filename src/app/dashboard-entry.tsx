@@ -27,7 +27,7 @@ export async function DashboardEntry({ initialScreen }: { initialScreen: Navigat
 
   if (authError) throw new Error("Sesi pengguna tidak dapat diverifikasi.");
   if (!user) redirect("/");
-  if (user.user_metadata?.must_change_password === true) redirect("/reset-password?required=1");
+  if (user.app_metadata?.bootstrap_password === true) redirect("/reset-password?required=1");
 
   const [profileResult, platformRoleResult, roleAssignmentsResult] = await Promise.all([
     supabase.from("profiles").select("display_name,status").eq("id", user.id).maybeSingle(),
