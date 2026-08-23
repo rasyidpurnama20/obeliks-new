@@ -1,0 +1,29 @@
+Curriculum Inspector source concept: rps-obe-level3.html
+- Program dashboard
+- Mata Kuliah
+- Curriculum Map
+- CPL Coverage
+- I-R-M Progression
+- Gap and recommendations
+
+Penyusunan RPS Inspector source concept: rps-obe-level2.html
+- Identitas
+- CPL
+- CPMK
+- Sub-CPMK
+- OBE Alignment
+- CPL Matrix
+- Bloom
+- Assessment
+- Quality inspector
+
+Evaluasi RPS Inspector source concept: rps-obe-level4-fixed.html
+- Assessment
+- Student Evidence
+- CPMK Attainment
+- CPL Attainment
+- Student Heatmap
+- Gap Analysis
+- Corrective Action
+- Next RPS
+- Closed Loop Inspector
