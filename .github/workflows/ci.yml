@@ -20,6 +20,7 @@ jobs:
       - run: npm run test:impersonation
       - run: npm run test:navigation-shell
       - run: npm run test:performance-security
+      - run: npm run test:institution-period
       - run: npm run test:user-onboarding
       - run: npm run test:bootstrap
       - run: npm run test:if-undip-data
